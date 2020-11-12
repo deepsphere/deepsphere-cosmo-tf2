@@ -1,6 +1,7 @@
 # cache from various things
 .idea/
 *__pycache__*
+dist/
 deepsphere.egg-info/
 *.ipynb_checkpoints*
 *.pyc
