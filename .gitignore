@@ -1,0 +1,11 @@
+# cache from various things
+.idea/
+*__pycache__*
+deepsphere.egg-info/
+*.ipynb_checkpoints*
+*.pyc
+
+# files for pytest and coverage
+Tests/test_plots/*
+.coverage
+.pytest_cache/
