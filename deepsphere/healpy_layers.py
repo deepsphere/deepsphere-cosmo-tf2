@@ -185,13 +185,16 @@ class HealpyChebyshev(object):
     """
     A helper class for a Chebyshev5 layer using healpy indices instead of the general Layer
     """
-    def __init__(self, K, Fout=None, initializer=None, activation=None, **kwargs):
+    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False,
+                 use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param K: Order of the polynomial to use
         :param Fout: Number of features (channels) of the output, default to number of input channels
         :param initializer: initializer to use for weight initialisation
         :param activation: the activation function to use after the layer, defaults to linear
+        :param use_bias: Use learnable bias weights
+        :param use_bn: Apply batch norm before adding the bias
         :param kwargs: additional keyword arguments passed on to add_weight
         """
         # we only save the variables here
@@ -199,6 +202,8 @@ class HealpyChebyshev(object):
         self.Fout = Fout
         self.initializer = initializer
         self.activation = activation
+        self.use_bias = use_bias
+        self.use_bn = use_bn
         self.kwargs = kwargs
 
     def _get_layer(self, L):
@@ -210,19 +215,21 @@ class HealpyChebyshev(object):
 
         # now we init the layer
         return Chebyshev(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                          **self.kwargs)
+                          use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
 
 class HealpyMonomial(object):
     """
     A graph convolutional layer using Monomials
     """
-    def __init__(self, K, Fout=None, initializer=None, activation=None, **kwargs):
+    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False, use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param K: Order of the polynomial to use
         :param Fout: Number of features (channels) of the output, default to number of input channels
         :param initializer: initializer to use for weight initialisation
         :param activation: the activation function to use after the layer, defaults to linear
+        :param use_bias: Use learnable bias weights
+        :param use_bn: Apply batch norm before adding the bias
         :param kwargs: additional keyword arguments passed on to add_weight
         """
 
@@ -231,6 +238,8 @@ class HealpyMonomial(object):
         self.Fout = Fout
         self.initializer = initializer
         self.activation = activation
+        self.use_bias = use_bias
+        self.use_bn = use_bn
         self.kwargs = kwargs
 
     def _get_layer(self, L):
@@ -242,7 +251,7 @@ class HealpyMonomial(object):
 
         # now we init the layer
         return Monomial(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                        **self.kwargs)
+                        use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
 
 class Healpy_ResidualLayer(object):
     """

@@ -103,6 +103,10 @@ def test_HealpyChebyshev():
 
     assert np.all(np.abs(new.numpy() - result) < 1e-5)
 
+    cheb = healpy_layers.HealpyChebyshev(Fout=Fout, K=K, initializer=initializer, use_bn=True, use_bias=True)
+    cheb = cheb._get_layer(L)
+    new = cheb(x)
+
 def test_HealpyMonomial():
     # this is the result from Deepsphere with tf 1.x
     result = np.array([[[ 0.04206353,  0.46168754,  0.10546149],
@@ -143,6 +147,13 @@ def test_HealpyMonomial():
     new = mon(x)
 
     assert np.all(np.abs(new.numpy() - result) < 1e-5)
+
+    mon = healpy_layers.HealpyMonomial(Fout=Fout, K=K, initializer=initializer,
+                                       activation=tf.keras.activations.linear, use_bias=True,
+                                       use_bn=True)
+    mon = mon._get_layer(L)
+    new = mon(x)
+
 
 def test_Healpy_ResidualLayer():
     # we get a random map
