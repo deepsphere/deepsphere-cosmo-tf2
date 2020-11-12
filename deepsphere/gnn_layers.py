@@ -16,7 +16,8 @@ class Chebyshev(Layer):
     A graph convolutional layer using the Chebyshev approximation
     """
 
-    def __init__(self, L, K, Fout=None, initializer=None, activation=None, **kwargs):
+    def __init__(self, L, K, Fout=None, initializer=None, activation=None, use_bias=False,
+                 use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param L: The graph Laplacian (MxM), as numpy array
@@ -24,6 +25,8 @@ class Chebyshev(Layer):
         :param Fout: Number of features (channels) of the output, default to number of input channels
         :param initializer: initializer to use for weight initialisation
         :param activation: the activation function to use after the layer, defaults to linear
+        :param use_bias: Use learnable bias weights
+        :param use_bn: Apply batch norm before adding the bias
         :param kwargs: additional keyword arguments passed on to add_weight
         """
 
@@ -34,6 +37,8 @@ class Chebyshev(Layer):
         self.L = L
         self.K = K
         self.Fout = Fout
+        self.use_bias = use_bias
+        self.use_bn = use_bn
         self.initializer = initializer
         if activation is None or callable(activation):
             self.activation = activation
@@ -78,19 +83,17 @@ class Chebyshev(Layer):
             self.kernel = self.add_weight("kernel", shape=[self.K * Fin, Fout],
                                           initializer=self.initializer, **self.kwargs)
 
+        if self.use_bias:
+            self.bias = self.add_weight("bias", shape=[1, 1, Fout])
+
+        if self.use_bn:
+            self.bn = tf.keras.layers.BatchNormalization()
+
         # we cast the sparse L to the current backend type
         if tf.keras.backend.floatx() == 'float32':
             self.sparse_L = tf.cast(self.sparse_L, tf.float32)
         if tf.keras.backend.floatx() == 'float64':
             self.sparse_L = tf.cast(self.sparse_L, tf.float64)
-
-    def compute_output_shape(self, input_shape):
-        """
-        Computes the output shape of the layer given an input shape
-        :param input_shape: shape of the input
-        :return: shape of the output
-        """
-        return [int(input_shape[0]), int(self.Fout)]
 
     def call(self, input_tensor, *args, **kwargs):
         """
@@ -106,7 +109,7 @@ class Chebyshev(Layer):
         # this is not strictly necessary but leads to a huge performance gain...
         # See: https://arxiv.org/pdf/1903.11409.pdf
         N, M, Fin = input_tensor.get_shape()
-        N, M, Fin = int(N), int(M), int(Fin)
+        M, Fin = int(M), int(Fin)
 
         # get Fout if necessary
         if self.Fout is None:
@@ -116,7 +119,7 @@ class Chebyshev(Layer):
 
         # Transform to Chebyshev basis
         x0 = tf.transpose(input_tensor, perm=[1, 2, 0])  # M x Fin x N
-        x0 = tf.reshape(x0, [M, Fin * N])  # M x Fin*N
+        x0 = tf.reshape(x0, [M, -1])  # M x Fin*N
 
         # list for stacking
         stack = [x0]
@@ -129,12 +132,18 @@ class Chebyshev(Layer):
             stack.append(x2)
             x0, x1 = x1, x2
         x = tf.stack(stack, axis=0)
-        x = tf.reshape(x, [self.K, M, Fin, N])  # K x M x Fin x N
+        x = tf.reshape(x, [self.K, M, Fin, -1])  # K x M x Fin x N
         x = tf.transpose(x, perm=[3, 1, 2, 0])  # N x M x Fin x K
-        x = tf.reshape(x, [N * M, Fin * self.K])  # N*M x Fin*K
+        x = tf.reshape(x, [-1, Fin * self.K])  # N*M x Fin*K
         # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
         x = tf.matmul(x, self.kernel)  # N*M x Fout
-        x = tf.reshape(x, [N, M, Fout])  # N x M x Fout
+        x = tf.reshape(x, [-1, M, Fout])  # N x M x Fout
+
+        if self.use_bn:
+            x = self.bn(x)
+
+        if self.use_bias:
+            x = tf.add(x, self.bias)
 
         if self.activation is not None:
             x = self.activation(x)
@@ -146,7 +155,8 @@ class Monomial(Layer):
     """
     A graph convolutional layer using Monomials
     """
-    def __init__(self, L, K, Fout=None, initializer=None, activation=None, **kwargs):
+    def __init__(self, L, K, Fout=None, initializer=None, activation=None, use_bias=False,
+                 use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param L: The graph Laplacian (MxM), as numpy array
@@ -154,6 +164,8 @@ class Monomial(Layer):
         :param Fout: Number of features (channels) of the output, default to number of input channels
         :param initializer: initializer to use for weight initialisation
         :param activation: the activation function to use after the layer, defaults to linear
+        :param use_bias: Use learnable bias weights
+        :param use_bn: Apply batch norm before adding the bias
         :param kwargs: additional keyword arguments passed on to add_weight
         """
 
@@ -164,6 +176,8 @@ class Monomial(Layer):
         self.L = L
         self.K = K
         self.Fout = Fout
+        self.use_bias = use_bias
+        self.use_bn = use_bn
         self.initializer = initializer
         if activation is None or callable(activation):
             self.activation = activation
@@ -206,19 +220,17 @@ class Monomial(Layer):
             self.kernel = self.add_weight("kernel", shape=[self.K * Fin, Fout],
                                           initializer=self.initializer, **self.kwargs)
 
+        if self.use_bias:
+            self.bias = self.add_weight("bias", shape=[1, 1, Fout])
+
+        if self.use_bn:
+            self.bn = tf.keras.layers.BatchNormalization()
+
         # we cast the sparse L to the current backend type
         if tf.keras.backend.floatx() == 'float32':
             self.sparse_L = tf.cast(self.sparse_L, tf.float32)
         if tf.keras.backend.floatx() == 'float64':
             self.sparse_L = tf.cast(self.sparse_L, tf.float64)
-
-    def compute_output_shape(self, input_shape):
-        """
-        Computes the output shape of the layer given an input shape
-        :param input_shape: shape of the input
-        :return: shape of the output
-        """
-        return [int(input_shape[0]), int(self.Fout)]
 
     def call(self, input_tensor, *args, **kwargs):
         """
@@ -234,7 +246,7 @@ class Monomial(Layer):
         # this is not strictly necessary but leads to a huge performance gain...
         # See: https://arxiv.org/pdf/1903.11409.pdf
         N, M, Fin = input_tensor.get_shape()
-        N, M, Fin = int(N), int(M), int(Fin)
+        M, Fin = int(M), int(Fin)
 
         # get Fout if necessary
         if self.Fout is None:
@@ -244,7 +256,7 @@ class Monomial(Layer):
 
         # Transform to monomial basis.
         x0 = tf.transpose(input_tensor, perm=[1, 2, 0])  # M x Fin x N
-        x0 = tf.reshape(x0, [M, Fin * N])  # M x Fin*N
+        x0 = tf.reshape(x0, [M, -1])  # M x Fin*N
 
         # list for stacking
         stack = [x0]
@@ -255,12 +267,18 @@ class Monomial(Layer):
             x0 = x1
 
         x = tf.stack(stack, axis=0)
-        x = tf.reshape(x, [self.K, M, Fin, N])  # K x M x Fin x N
+        x = tf.reshape(x, [self.K, M, Fin, -1])  # K x M x Fin x N
         x = tf.transpose(x, perm=[3, 1, 2, 0])  # N x M x Fin x K
-        x = tf.reshape(x, [N * M, Fin * self.K])  # N*M x Fin*K
+        x = tf.reshape(x, [-1, Fin * self.K])  # N*M x Fin*K
         # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
         x = tf.matmul(x, self.kernel)  # N*M x Fout
-        x = tf.reshape(x, [N, M, Fout])  # N x M x Fout
+        x = tf.reshape(x, [-1, M, Fout])  # N x M x Fout
+
+        if self.use_bn:
+            x = self.bn(x)
+
+        if self.use_bias:
+            x = tf.add(x, self.bias)
 
         if self.activation is not None:
             x = self.activation(x)

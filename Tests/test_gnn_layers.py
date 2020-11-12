@@ -54,6 +54,11 @@ def test_Chebyshev():
 
     assert np.all(np.abs(new.numpy() - result) < 1e-5)
 
+    # now we test bias and batch norm
+    cheb = gnn_layers.Chebyshev(L=L.numpy(), Fout=Fout, K=K, initializer=initializer, activation="linear",
+                                use_bias=True, use_bn=True)
+    new = cheb(x)
+
 def test_Monimials():
     # this is the result from Deepsphere with tf 1.x
     result = np.array([[[ 0.04206353,  0.46168754,  0.10546149],
@@ -100,6 +105,11 @@ def test_Monimials():
     new_1 = mon(x)
 
     assert new_1.shape == new.shape
+
+    # same with new actiation
+    mon = gnn_layers.Monomial(L=L.numpy(), Fout=Fout, K=K, initializer=initializer,
+                              activation="elu", use_bn=True, use_bias=True)
+    new_1 = mon(x)
 
 def test_GCNN_ResidualLayer():
     # we get a random map to pool
