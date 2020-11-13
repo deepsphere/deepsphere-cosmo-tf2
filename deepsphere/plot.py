@@ -36,6 +36,16 @@ def plot_filters_gnomonic(filters, order=10, ind=0, title='Filter {}->{}', grati
     # Plot everything.
     fig, axes = plt.subplots(nrows, ncols, figsize=(8, 8/ncols*nrows),
                              squeeze=False, sharex='col', sharey='row')
+    # turn of axes
+    [axi.set_axis_off() for axi in axes.ravel()]
+
+    # handle margins
+    if title is None:
+        margins = [0.003, 0.003, 0.003, 0.003]
+        title = ""
+    else:
+        margins = [0.015, 0.015, 0.015, 0.015]
+
     cm = plt.cm.seismic
     cm.set_under('w')
     a = max(abs(maps.min()), maps.max())
@@ -45,9 +55,9 @@ def plot_filters_gnomonic(filters, order=10, ind=0, title='Filter {}->{}', grati
             map = maps[row, col, :]
             hp.gnomview(map.flatten(), fig=fig, nest=True, rot=rot, reso=reso, sub=(nrows, ncols, col+row*ncols+1),
                     title=title.format(row, col), notext=True,  min=ymin, max=ymax, cbar=False, cmap=cm,
-                    margins=[0.003,0.003,0.003,0.003],)
+                    margins=margins)
 
-    fig.suptitle('Gnomoinc view of the {} filters in the filterbank'.format(filters.n_filters), fontsize=25)#, y=0.90)
+    fig.suptitle('Gnomoinc view of the {} filters in the filterbank'.format(filters.n_filters), fontsize=25, y=1.05)
 
     if graticule:
         with utils.HiddenPrints():
@@ -93,7 +103,6 @@ def plot_filters_section(filters,
 
     if figsize==None:
         figsize = (12, 12/ncols*nrows)
-        print(ncols, nrows)
 
     # Plot everything.
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize,

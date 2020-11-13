@@ -311,7 +311,6 @@ class HealpyGCNN(Sequential):
         figs = []
         for filter in filters:
             figs.append(plot.plot_filters_gnomonic(filter, order=K, **kwargs))
-        print(figs)
 
         return figs
 
