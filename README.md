@@ -32,8 +32,17 @@ Ressources:
    **Note**: the code has been developed and tested with Python 3.5 and 3.6.
    It **does not** work on Python 2.7!
 
+3. Install the package.
+   ```sh
+   pip install -e ./
+   ```
 
-3. Play with the Jupyter notebooks.
+4. (Optional) Test the installation
+   ```
+   pytest Tests/
+   ```
+
+5. Play with the Jupyter notebooks.
    ```sh
    jupyter notebook
    ```
@@ -45,7 +54,7 @@ The below notebooks contain examples and experiments to play with the model.
 1. [Quick Start: Classification of data on the whole sphere.][whole_sphere]
    The easiest example to run if you want to play with the model.
 
-[whole_sphere]: https://nbviewer.jupyter.org/github/SwissDataScienceCenter/DeepSphere/blob/outputs/demo_whole_sphere.ipynb
+[whole_sphere]: /blob/master/Examples/Quick_Start.ipynb
 
 ## License & citation
 
