@@ -54,7 +54,7 @@ The below notebooks contain examples and experiments to play with the model.
 1. [Quick Start: Classification of data on the whole sphere.][whole_sphere]
    The easiest example to run if you want to play with the model.
 
-[whole_sphere]: /blob/master/Examples/Quick_Start.ipynb
+[whole_sphere]: Examples/Quick_Start.ipynb
 
 ## License & citation
 
