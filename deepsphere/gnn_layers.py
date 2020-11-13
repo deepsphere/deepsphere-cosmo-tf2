@@ -39,6 +39,8 @@ class Chebyshev(Layer):
         self.Fout = Fout
         self.use_bias = use_bias
         self.use_bn = use_bn
+        if self.use_bn:
+            self.bn = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.9, epsilon=1e-5, center=False, scale=False)
         self.initializer = initializer
         if activation is None or callable(activation):
             self.activation = activation
@@ -86,20 +88,18 @@ class Chebyshev(Layer):
         if self.use_bias:
             self.bias = self.add_weight("bias", shape=[1, 1, Fout])
 
-        if self.use_bn:
-            self.bn = tf.keras.layers.BatchNormalization()
-
         # we cast the sparse L to the current backend type
         if tf.keras.backend.floatx() == 'float32':
             self.sparse_L = tf.cast(self.sparse_L, tf.float32)
         if tf.keras.backend.floatx() == 'float64':
             self.sparse_L = tf.cast(self.sparse_L, tf.float64)
 
-    def call(self, input_tensor, *args, **kwargs):
+    def call(self, input_tensor, training=False, *args, **kwargs):
         """
         Calls the layer on a input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)
         :param args: further arguments
+        :param training: wheter we are training or not
         :param kwargs: further keyword arguments
         :return: the output of the layer
         """
@@ -140,7 +140,7 @@ class Chebyshev(Layer):
         x = tf.reshape(x, [-1, M, Fout])  # N x M x Fout
 
         if self.use_bn:
-            x = self.bn(x)
+            x = self.bn(x, training=training)
 
         if self.use_bias:
             x = tf.add(x, self.bias)
@@ -178,6 +178,8 @@ class Monomial(Layer):
         self.Fout = Fout
         self.use_bias = use_bias
         self.use_bn = use_bn
+        if self.use_bn:
+            self.bn = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.9, epsilon=1e-5, center=False, scale=False)
         self.initializer = initializer
         if activation is None or callable(activation):
             self.activation = activation
@@ -223,19 +225,17 @@ class Monomial(Layer):
         if self.use_bias:
             self.bias = self.add_weight("bias", shape=[1, 1, Fout])
 
-        if self.use_bn:
-            self.bn = tf.keras.layers.BatchNormalization()
-
         # we cast the sparse L to the current backend type
         if tf.keras.backend.floatx() == 'float32':
             self.sparse_L = tf.cast(self.sparse_L, tf.float32)
         if tf.keras.backend.floatx() == 'float64':
             self.sparse_L = tf.cast(self.sparse_L, tf.float64)
 
-    def call(self, input_tensor, *args, **kwargs):
+    def call(self, input_tensor, training=False, *args, **kwargs):
         """
         Calls the layer on a input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)
+        :param training: wheter we are training or not
         :param args: further arguments
         :param kwargs: further keyword arguments
         :return: the output of the layer
@@ -275,7 +275,7 @@ class Monomial(Layer):
         x = tf.reshape(x, [-1, M, Fout])  # N x M x Fout
 
         if self.use_bn:
-            x = self.bn(x)
+            x = self.bn(x, training=training)
 
         if self.use_bias:
             x = tf.add(x, self.bias)
