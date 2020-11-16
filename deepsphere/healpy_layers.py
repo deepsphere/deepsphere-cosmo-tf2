@@ -261,7 +261,7 @@ class Healpy_ResidualLayer(object):
     """
 
     def __init__(self, layer_type, layer_kwargs, activation=None, act_before=False, use_bn=False,
-                 norm_type="batch_norm", bn_kwargs=None):
+                 norm_type="batch_norm", bn_kwargs=None, alpha=1.0):
         """
         Initializes the residual layer with the given argument
         :param layer_type: The layer type, either "CHEBY" or "MONO" for chebychev or monomials
@@ -272,6 +272,7 @@ class Healpy_ResidualLayer(object):
         :param norm_type: type of batch norm, either batch_norm for normal batch norm, layer_norm for
                           tf.keras.layers.LayerNormalization or moving_norm for special_layer.MovingBatchNorm
         :param bn_kwargs: An optional dictionary containing further keyword arguments for the normalization layer
+        :param alpha: Coupling strength of the input -> layer(input) + alpha*input
         """
 
         # we only save the variables here
@@ -282,6 +283,7 @@ class Healpy_ResidualLayer(object):
         self.use_bn = use_bn
         self.norm_type = norm_type
         self.bn_kwargs = bn_kwargs
+        self.alpha = alpha
 
     def _get_layer(self, L):
         """
@@ -295,5 +297,5 @@ class Healpy_ResidualLayer(object):
         return GCNN_ResidualLayer(layer_type=self.layer_type, layer_kwargs=self.layer_kwargs,
                                   activation=self.activation, act_before=self.act_before,
                                   use_bn=self.use_bn, norm_type=self.norm_type,
-                                  bn_kwargs=self.bn_kwargs)
+                                  bn_kwargs=self.bn_kwargs, alpha=self.alpha)
 

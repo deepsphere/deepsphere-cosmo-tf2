@@ -289,12 +289,12 @@ class Monomial(Layer):
 class GCNN_ResidualLayer(Model):
     """
     A generic residual layer of the form
-    in -> layer -> layer -> out + in
+    in -> layer -> layer -> out + alpha*in
     with optional batchnorm in the end
     """
 
     def __init__(self, layer_type, layer_kwargs, activation=None, act_before=False, use_bn=False,
-                 norm_type="batch_norm", bn_kwargs=None):
+                 norm_type="batch_norm", bn_kwargs=None, alpha=1.0):
         """
         Initializes the residual layer with the given argument
         :param layer_type: The layer type, either "CHEBY" or "MONO" for chebychev or monomials
@@ -305,6 +305,7 @@ class GCNN_ResidualLayer(Model):
         :param norm_type: type of batch norm, either batch_norm for normal batch norm or layer_norm for
                           tf.keras.layers.LayerNormalization
         :param bn_kwargs: An optional dictionary containing further keyword arguments for the normalization layer
+        :param alpha: Coupling strength of the input -> layer(input) + alpha*input
         """
         # This is necessary for every Layer
         super(GCNN_ResidualLayer, self).__init__(name='')
@@ -349,6 +350,8 @@ class GCNN_ResidualLayer(Model):
             else:
                 raise ValueError(f"norm_type <{norm_type}> not understood!")
 
+        self.alpha = alpha
+
     def call(self, input_tensor, training=False, *args, **kwargs):
         """
         Calls the layer on a input tensorf
@@ -376,6 +379,6 @@ class GCNN_ResidualLayer(Model):
             return x + input_tensor
 
         if self.act_before:
-            return self.activation(x) + input_tensor
+            return self.activation(x) + self.alpha*input_tensor
         else:
-            return self.activation(x + input_tensor)
+            return self.activation(x + self.alpha*input_tensor)
