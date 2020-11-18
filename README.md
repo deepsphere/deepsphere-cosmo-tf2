@@ -53,8 +53,16 @@ The below notebooks contain examples and experiments to play with the model.
 
 1. [Quick Start: Classification of data on the whole sphere.][whole_sphere]
    The easiest example to run if you want to play with the model.
+   
+2. [Advanced Tutorial][advanced]
+   This notebook gives an introduction to various layers and customized training loops
+   
+3. [Generative Models][generativ]
+   How to build an auto-encoder using spherical data and the transpose healpy pseudo convolutions.
 
 [whole_sphere]: Examples/Quick_Start.ipynb
+[advanced]: Examples/Advanced_Tutorial.ipynb 
+[generativ]: Examples/Generative_Models.ipynb 
 
 ## License & citation
 
