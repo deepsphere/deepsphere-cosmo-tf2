@@ -79,7 +79,6 @@ rsa==4.6
 scipy==1.4.1
 Send2Trash==1.5.0
 six==1.15.0
-sklearn
 tensorboard>=2.4.0
 tensorboard-plugin-wit==1.7.0
 tensorflow>=2.3.0
