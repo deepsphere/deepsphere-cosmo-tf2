@@ -3,11 +3,11 @@
 from __future__ import division
 
 from builtins import range
-import sys
 
 import numpy as np
 from scipy import sparse
 import healpy as hp
+
 
 def extend_indices(indices, nside_in, nside_out, nest=True):
     """
@@ -38,6 +38,7 @@ def extend_indices(indices, nside_in, nside_out, nest=True):
 
     # get the new indices
     return np.arange(hp.nside2npix(nside_in))[m_in > 1e-12]
+
 
 def healpix_weightmatrix(nside=16, nest=True, indexes=None, dtype=np.float32):
     """Return an unnormalized weight matrix for a graph using the HEALPIX sampling.

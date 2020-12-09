@@ -1,12 +1,10 @@
-from deepsphere import gnn_layers
-
+import pytest
+import numpy as np
 import tensorflow as tf
-
 import healpy as hp
 
-import numpy as np
+from deepsphere import gnn_layers
 
-import pytest
 
 def test_Chebyshev():
     # this is the result from Deepsphere with tf 1.x
@@ -39,7 +37,6 @@ def test_Chebyshev():
     Fout = 3
     K = 4
 
-
     # create the layer
     stddev = 1 / np.sqrt(7 * (K + 0.5) / 2)
     initializer = tf.initializers.RandomNormal(stddev=stddev, seed=13)
@@ -58,6 +55,7 @@ def test_Chebyshev():
     cheb = gnn_layers.Chebyshev(L=L.numpy(), Fout=Fout, K=K, initializer=initializer, activation="linear",
                                 use_bias=True, use_bn=True)
     new = cheb(x)
+
 
 def test_Monimials():
     # this is the result from Deepsphere with tf 1.x
@@ -111,6 +109,7 @@ def test_Monimials():
                               activation="elu", use_bn=True, use_bias=True)
     new_1 = mon(x)
 
+
 def test_GCNN_ResidualLayer():
     # we get a random map to pool
     n_pix = hp.nside2npix(4)
@@ -152,7 +151,3 @@ def test_GCNN_ResidualLayer():
         res_layer = gnn_layers.GCNN_ResidualLayer(layer_type=layer_type, layer_kwargs=layer_kwargs,
                                                   activation=tf.keras.activations.relu, use_bn=True,
                                                   norm_type="moving_norm")
-
-
-
-

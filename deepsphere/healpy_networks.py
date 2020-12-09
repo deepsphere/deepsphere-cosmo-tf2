@@ -1,18 +1,14 @@
-from tensorflow.keras.models import Sequential
-
+import numpy as np
 import matplotlib.pyplot as plt
-
+from tensorflow.keras.models import Sequential
+import healpy as hp
 from pygsp import filters
 
-import healpy as hp
-
-import numpy as np
-
-# local imports
 from . import healpy_layers as hp_nn
 from . import gnn_layers as gnn
 from . import utils
 from . import plot
+
 
 class HealpyGCNN(Sequential):
     """
@@ -313,4 +309,3 @@ class HealpyGCNN(Sequential):
             figs.append(plot.plot_filters_gnomonic(filter, order=K, **kwargs))
 
         return figs
-

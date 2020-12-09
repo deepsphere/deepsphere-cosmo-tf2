@@ -1,19 +1,15 @@
+import os
+import tempfile
+
 import pytest
-
-import tensorflow as tf
-
-import healpy as hp
-
 import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+import healpy as hp
 
 from deepsphere import healpy_layers as hp_nn
 from deepsphere import HealpyGCNN
 
-import matplotlib.pyplot as plt
-
-import tempfile
-
-import os
 
 def test_HealpyGCNN_plotting():
     # create dir for plots
@@ -88,6 +84,7 @@ def test_HealpyGCNN_plotting():
     out = model(m_in)
 
     assert out.numpy().shape == (3, 4)
+
 
 def test_HealpyGCNN():
     # clear session

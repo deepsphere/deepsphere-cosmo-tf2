@@ -3,11 +3,9 @@
 from __future__ import division
 
 from builtins import range
-import datetime
 
 import numpy as np
 import healpy as hp
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
@@ -122,6 +120,7 @@ def plot_filters_section(filters,
                 axes[row, col].set_ylabel(ylabel.format(row))
     fig.suptitle(title.format(filters.n_filters))#, y=0.90)
     return fig
+
 
 def get_index_equator(nside, radius):
     """Return some indexes on the equator and the center of the index."""

@@ -1,7 +1,8 @@
-import healpy as hp
 import numpy as np
+import healpy as hp
 
 from deepsphere import utils
+
 
 def test_extend_indices():
     # defs
@@ -28,4 +29,3 @@ def test_extend_indices():
     new_indices = utils.extend_indices(indices, nside_in=nside_in, nside_out=nside_out, nest=False)
 
     assert len(new_indices) == hp.nside2npix(nside_in)
-

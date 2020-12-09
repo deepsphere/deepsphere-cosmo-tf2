@@ -1,12 +1,10 @@
 import pytest
-
-import healpy as hp
-
 import numpy as np
+import tensorflow as tf
+import healpy as hp
 
 from deepsphere import healpy_layers
 
-import tensorflow as tf
 
 def test_HealpyPool():
     # we get a random map to pool
@@ -25,7 +23,7 @@ def test_HealpyPool():
 
     # avg layer
     avg_layer = healpy_layers.HealpyPool(1, pool_type="AVG")
-    m_avg_tf = avg_layer(m_in[None,:,None])
+    m_avg_tf = avg_layer(m_in[None, :, None])
 
     assert np.all(np.abs(m_avg - m_avg_tf.numpy().ravel()) < 1e-5)
 
@@ -38,6 +36,7 @@ def test_HealpyPool():
 
     assert np.all(np.abs(m_max - m_max_tf.numpy().ravel()) < 1e-5)
 
+
 def test_HealpyPseudoConv():
     # we get a random map to conv
     n_pix = hp.nside2npix(8)
@@ -46,9 +45,10 @@ def test_HealpyPseudoConv():
 
     # layer
     hp_conv = healpy_layers.HealpyPseudoConv(3, 5)
-    m_conv_tf = hp_conv(m_in[None,:,None])
+    m_conv_tf = hp_conv(m_in[None, :, None])
 
-    assert m_conv_tf.numpy().shape == (1,n_pix//int(4**3),5)
+    assert m_conv_tf.numpy().shape == (1, n_pix//int(4**3), 5)
+
 
 def test_HealpyPseudoConv_Transpose():
     # we get a random map to conv
@@ -61,6 +61,7 @@ def test_HealpyPseudoConv_Transpose():
     m_conv_tf = hp_conv(m_in[None, :, None])
 
     assert m_conv_tf.numpy().shape == (1, n_pix * int(4 ** 3), 5)
+
 
 def test_HealpyChebyshev():
 
@@ -107,6 +108,7 @@ def test_HealpyChebyshev():
     cheb = cheb._get_layer(L)
     new = cheb(x)
 
+
 def test_HealpyMonomial():
     # this is the result from Deepsphere with tf 1.x
     result = np.array([[[ 0.04206353,  0.46168754,  0.10546149],
@@ -149,7 +151,8 @@ def test_HealpyMonomial():
     assert np.all(np.abs(new.numpy() - result) < 1e-5)
 
     mon = healpy_layers.HealpyMonomial(Fout=Fout, K=K, initializer=initializer,
-                                       activation=tf.keras.activations.linear, use_bias=True,
+                                       activation=tf.keras.activations.linear,
+                                       use_bias=True,
                                        use_bn=True)
     mon = mon._get_layer(L)
     new = mon(x)
@@ -167,7 +170,8 @@ def test_Healpy_ResidualLayer():
                     "activation": tf.keras.activations.relu,
                     "regularizer": tf.keras.regularizers.l1}
 
-    res_layer = healpy_layers.Healpy_ResidualLayer(layer_type=layer_type, layer_kwargs=layer_kwargs,
+    res_layer = healpy_layers.Healpy_ResidualLayer(layer_type=layer_type,
+                                                   layer_kwargs=layer_kwargs,
                                                    activation=tf.keras.activations.relu)
     res_layer = res_layer._get_layer(np.eye(n_pix, dtype=np.float64))
     out = res_layer(m_in)

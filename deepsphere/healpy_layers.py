@@ -1,5 +1,6 @@
 from .gnn_layers import *
 
+
 class HealpyPool(Model):
     """
     A pooling layer for healy maps, makes use of the fact that a pixels is always divided into 4 subpixels when
@@ -58,6 +59,7 @@ class HealpyPool(Model):
 
         return self.filter(input_tensor)
 
+
 class HealpyPseudoConv(Model):
     """
     A pseude convolutional layer on Healpy maps. It makes use of the Healpy pixel scheme and reduces the nside by
@@ -103,7 +105,6 @@ class HealpyPseudoConv(Model):
         if n_nodes % self.filter_size != 0:
             raise IOError(f"Input shape {input_shape} not compatible with the filter size {self.filter_size}")
         self.filter.build(input_shape)
-
 
     def call(self, input_tensor, *args, **kwargs):
         """
@@ -168,7 +169,6 @@ class HealpyPseudoConv_Transpose(Model):
 
         self.filter.build(input_shape)
 
-
     def call(self, input_tensor, *args, **kwargs):
         """
         Calls the layer on a input tensor
@@ -180,6 +180,7 @@ class HealpyPseudoConv_Transpose(Model):
 
         input_tensor = tf.expand_dims(input_tensor, axis=1)
         return tf.squeeze(self.filter(input_tensor), axis=1)
+
 
 class HealpyChebyshev(object):
     """
@@ -217,6 +218,7 @@ class HealpyChebyshev(object):
         return Chebyshev(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
                           use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
 
+
 class HealpyMonomial(object):
     """
     A graph convolutional layer using Monomials
@@ -252,6 +254,7 @@ class HealpyMonomial(object):
         # now we init the layer
         return Monomial(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
                         use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
+
 
 class Healpy_ResidualLayer(object):
     """
@@ -298,4 +301,3 @@ class Healpy_ResidualLayer(object):
                                   activation=self.activation, act_before=self.act_before,
                                   use_bn=self.use_bn, norm_type=self.norm_type,
                                   bn_kwargs=self.bn_kwargs, alpha=self.alpha)
-

@@ -1,13 +1,10 @@
+import numpy as np
+from scipy import sparse
+from scipy.sparse.linalg import eigsh
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Layer
 
-import numpy as np
-
-from scipy import sparse
-from scipy.sparse.linalg import eigsh
-
-# local imports
 from . import utils
 
 
@@ -338,7 +335,6 @@ class GCNN_ResidualLayer(Model):
             self.layer2 = Monomial(**self.layer_kwargs)
         else:
             raise IOError(f"Layertype not understood: {self.layer_type}")
-
 
         if use_bn:
             if norm_type == "layer_norm":
