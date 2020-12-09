@@ -62,7 +62,7 @@ class HealpyPool(Model):
 
 class HealpyPseudoConv(Model):
     """
-    A pseude convolutional layer on Healpy maps. It makes use of the Healpy pixel scheme and reduces the nside by
+    A pseudo convolutional layer on Healpy maps. It makes use of the Healpy pixel scheme and reduces the nside by
     averaging the pixels into bigger pixels using learnable weights
     """
 

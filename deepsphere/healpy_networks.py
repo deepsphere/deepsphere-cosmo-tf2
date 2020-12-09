@@ -12,7 +12,7 @@ from . import plot
 
 class HealpyGCNN(Sequential):
     """
-    A graph convolutional netork using the Keras model API and the layers from the model
+    A graph convolutional network using the Keras model API and the layers from the model
     """
 
     def __init__(self, nside, indices, layers, use_4=False):
