@@ -7,6 +7,6 @@ deepsphere.egg-info/
 *.pyc
 
 # files for pytest and coverage
-Tests/test_plots/*
+/tests/test_plots/
 .coverage
 .pytest_cache/

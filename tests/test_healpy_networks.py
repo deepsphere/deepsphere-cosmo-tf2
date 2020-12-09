@@ -13,7 +13,7 @@ from deepsphere import HealpyGCNN
 
 def test_HealpyGCNN_plotting():
     # create dir for plots
-    os.makedirs("./Tests/test_plots", exist_ok=True)
+    os.makedirs("./tests/test_plots", exist_ok=True)
 
     # clear session
     tf.keras.backend.clear_session()
