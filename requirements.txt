@@ -11,7 +11,6 @@ chardet==3.0.4
 coverage==5.3
 cycler==0.10.0
 decorator==4.4.2
--e git+https://github.com/jafluri/DeepSphere_TF2.git@eccb9f3ae3cc8af243d5c2a5ffd808a882e08878#egg=deepsphere
 defusedxml==0.6.0
 entrypoints==0.3
 gast==0.3.3
