@@ -182,7 +182,7 @@ class HealpyPseudoConv_Transpose(Model):
         return tf.squeeze(self.filter(input_tensor), axis=1)
 
 
-class HealpyChebyshev(object):
+class HealpyChebyshev():
     """
     A helper class for a Chebyshev5 layer using healpy indices instead of the general Layer
     """
@@ -219,7 +219,7 @@ class HealpyChebyshev(object):
                           use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
 
 
-class HealpyMonomial(object):
+class HealpyMonomial():
     """
     A graph convolutional layer using Monomials
     """
@@ -256,7 +256,7 @@ class HealpyMonomial(object):
                         use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
 
 
-class Healpy_ResidualLayer(object):
+class Healpy_ResidualLayer():
     """
     A generic residual layer of the form
     in -> layer -> layer -> out + in

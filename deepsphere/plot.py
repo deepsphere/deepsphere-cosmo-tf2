@@ -1,9 +1,5 @@
 """Plotting module."""
 
-from __future__ import division
-
-from builtins import range
-
 import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
