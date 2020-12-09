@@ -21,8 +21,8 @@ Ressources:
 
 1. Clone this repository.
    ```sh
-   git clone <add link...>
-   cd DeepSphere
+   git clone https://github.com/deepsphere/DeepSphere_TF2
+   cd DeepSphere_TF2
    ```
 
 2. Install the dependencies.
@@ -34,12 +34,12 @@ Ressources:
 
 3. Install the package.
    ```sh
-   pip install -e ./
+   pip install -e .
    ```
 
-4. (Optional) Test the installation
+4. (Optional) Test the installation.
    ```
-   pytest Tests/
+   pytest Tests
    ```
 
 5. Play with the Jupyter notebooks.
