@@ -1,6 +1,6 @@
 # DeepSphere TF 2.x: a spherical convolutional neural network
 
-[Janis Fluri][jafluri] [Nathanaël Perraudin][nath], [Michaël Defferrard][mdeff]
+[Janis Fluri][jafluri], [Nathanaël Perraudin][nath], [Michaël Defferrard][mdeff]
 
 [jafluri]: http://www.da.inf.ethz.ch/people/JanisFluri
 [nath]: https://perraudin.info
