@@ -35,7 +35,7 @@ Ressources:
    ```sh
    pip install -r requirements.txt
    ```
-   **Note**: the code has been developed and tested with Python 3.5 and 3.6.
+   **Note**: the code has been developed and tested with Python 3.6.
    It **does not** work on Python 2.7!
 
 3. Install the package.
