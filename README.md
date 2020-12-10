@@ -1,5 +1,11 @@
 # DeepSphere TF 2.x: a spherical convolutional neural network
 
+[Janis Fluri][jafluri] [Nathanaël Perraudin][nath], [Michaël Defferrard][mdeff]
+
+[jafluri]: http://www.da.inf.ethz.ch/people/JanisFluri
+[nath]: https://perraudin.info
+[mdeff]: http://deff.ch
+
 This is an implementation of the original [Deepsphere repository](https://github.com/deepsphere/DeepSphere) using Tensorflow 2.x.
 
 Ressources:
@@ -64,7 +70,6 @@ The below notebooks contain examples and experiments to play with the model.
 
 ## License & citation
 
-**How does this work here?**
 The content of this repository is released under the terms of the [MIT license](LICENCE.txt).
 Please consider citing our papers if you use it.
 
