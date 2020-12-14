@@ -64,9 +64,9 @@ The below notebooks contain examples and experiments to play with the model.
 3. [Generative Models.][generative]
    How to build an auto-encoder using spherical data and the transpose healpy pseudo convolutions.
 
-[whole_sphere]: examples/quick_start.ipynb
-[advanced]: examples/advanced_tutorial.ipynb
-[generative]: examples/generative_models.ipynb
+[whole_sphere]: https://nbviewer.jupyter.org/github/deepsphere/deepsphere-cosmo-tf2/blob/master/examples/quick_start.ipynb
+[advanced]: https://nbviewer.jupyter.org/github/deepsphere/deepsphere-cosmo-tf2/blob/master/examples/advanced_tutorial.ipynb
+[generative]: https://nbviewer.jupyter.org/github/deepsphere/deepsphere-cosmo-tf2/blob/master/examples/generative_models.ipynb
 
 ## License & citation
 
