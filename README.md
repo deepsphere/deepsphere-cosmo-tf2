@@ -27,8 +27,8 @@ Ressources:
 
 1. Clone this repository.
    ```sh
-   git clone https://github.com/deepsphere/DeepSphere_TF2
-   cd DeepSphere_TF2
+   git clone https://github.com/deepsphere/deepsphere-cosmo-tf2.git
+   cd deepsphere-cosmo-tf2
    ```
 
 2. Install the dependencies.
