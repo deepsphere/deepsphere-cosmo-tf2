@@ -4,7 +4,7 @@
 
 [jafluri]: http://www.da.inf.ethz.ch/people/JanisFluri
 [nath]: https://perraudin.info
-[mdeff]: http://deff.ch
+[mdeff]: https://deff.ch
 
 This is an implementation of the original [Deepsphere repository](https://github.com/deepsphere/DeepSphere) using Tensorflow 2.x.
 
