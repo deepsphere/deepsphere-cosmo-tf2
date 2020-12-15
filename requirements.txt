@@ -64,7 +64,7 @@ py==1.9.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 Pygments==2.7.2
-PyGSP @ git+https://github.com/epfl-lts2/pygsp.git@9f168dd836c849d4675bc5b18c7260f9482a67a4
+PyGSP @ git+https://github.com/jafluri/pygsp.git
 pylint==2.6.0
 pyparsing==2.4.7
 pyrsistent==0.17.3
