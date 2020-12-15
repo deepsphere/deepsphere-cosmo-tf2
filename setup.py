@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="deepsphere",
-    version="0.1",
+    version="0.2",
     description='DeepSphere in TF 2.x for healpy.',
     author='Janis Fluri',
     author_email='janis.fluri@phys.ethz.ch',
