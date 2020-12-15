@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 import healpy as hp
+from pygsp.graphs import SphereHealpix
 from pygsp import filters
 
 from . import healpy_layers as hp_nn
@@ -15,27 +16,29 @@ class HealpyGCNN(Sequential):
     A graph convolutional network using the Keras model API and the layers from the model
     """
 
-    def __init__(self, nside, indices, layers, use_4=False):
+    def __init__(self, nside, indices, layers, n_neighbors=8):
         """
         Initializes a graph convolutional neural network using the healpy pixelization scheme
         :param nside: integeger, the nside of the input
         :param indices: 1d array of inidices, corresponding to the pixel ids of the input of the NN
         :param layers: a list of layers that will make up the neural network
-        :param use_4: only use 4 neighbors in the computational graph
+        :param n_neighbors: Number of neighbors considered when building the graph, currently supported values are:
+                            8 (default), 20, 40 and 60.
         """
         # This is necessary for every Layer
         super(HealpyGCNN, self).__init__(name='')
 
-        if use_4:
-            raise NotImplementedError("The graph with four neighbours it not implemented correctly yet...")
-
         print("WARNING: This network assumes that everything concerning healpy is in NEST ordering...", flush=True)
+
+        if n_neighbors not in [8, 20, 40, 60]:
+            raise NotImplementedError(f"The requested number of neighbors {n_neighbors} is nor supported. Choose "
+                                      f"either 8, 20, 40 or 60.")
 
         # save the variables
         self.nside_in = nside
         self.indices_in = indices
         self.layers_in = layers
-        self.use_4 = use_4
+        self.n_neighbors = n_neighbors
 
         # first we check the consistency, by getting the total reduction factor of the nside
         self.reduction_fac = 1.0
@@ -80,7 +83,9 @@ class HealpyGCNN(Sequential):
         for layer in self.layers_in:
             if isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.Healpy_ResidualLayer)):
                 # we need to calculate the current L and get the actual layer
-                current_L = utils.healpix_laplacian(nside=current_nside, indexes=current_indices, use_4=self.use_4)
+                sphere = SphereHealpix(subdivisions=current_nside, indexes=current_indices, nest=True,
+                                       k=self.n_neighbors, lap_type='normalized')
+                current_L = sphere.L
                 actual_layer = layer._get_layer(current_L)
                 self.layers_use.append(actual_layer)
             elif isinstance(layer, (hp_nn.HealpyPool, hp_nn.HealpyPseudoConv)):
@@ -208,7 +213,9 @@ class HealpyGCNN(Sequential):
 
         gsp_filters = []
         for weight in weights:
-            pygsp_graph = utils.healpix_graph(nside=nside)
+            pygsp_graph = SphereHealpix(subdivisions=nside, indexes=np.arange(hp.nside2npix(nside)), nest=True,
+                                       k=self.n_neighbors, lap_type='normalized')
+            #pygsp_graph = utils.healpix_graph(nside=nside)
             pygsp_graph.estimate_lmax()
             gsp_filters.append(filters.Chebyshev(pygsp_graph, weight))
 
@@ -246,7 +253,6 @@ class HealpyGCNN(Sequential):
         """
 
         filters = self.get_gsp_filters(layer,  ind_in=ind_in, ind_out=ind_out)
-
         if ax is None:
             ax = plt.gca()
         for filter in filters:

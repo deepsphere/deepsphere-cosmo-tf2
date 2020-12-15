@@ -142,7 +142,7 @@ def test_HealpyGCNN():
 
     # test the use 4 graphing
     with pytest.raises(NotImplementedError):
-        model = HealpyGCNN(nside=nside_in, indices=indices, layers=layers, use_4=True)
+        model = HealpyGCNN(nside=nside_in, indices=indices, layers=layers, n_neighbors=12)
 
     # more channels
     tf.keras.backend.clear_session()
