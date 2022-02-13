@@ -102,10 +102,13 @@ def test_HealpyGCNN():
     layers = [hp_nn.HealpyPseudoConv(p=1, Fout=4),
               hp_nn.HealpyPool(p=1),
               hp_nn.HealpyChebyshev(K=5, Fout=8),
+              hp_nn.HealpyChebyshev(K=5, Fout=8),
               hp_nn.HealpyPseudoConv(p=2, Fout=16),
               hp_nn.HealpyPseudoConv_Transpose(p=2, Fout=16),
               hp_nn.HealpyPseudoConv(p=2, Fout=16),
               hp_nn.HealpyMonomial(K=5, Fout=32),
+              hp_nn.HealpyMonomial(K=5, Fout=32),
+              hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5}),
               hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5}),
               tf.keras.layers.Flatten(),
               tf.keras.layers.Dense(4)]

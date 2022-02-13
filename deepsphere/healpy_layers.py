@@ -17,7 +17,7 @@ class HealpyPool(Model):
         :param kwargs: additional kwargs passed to the keras pooling layer
         """
         # This is necessary for every Layer
-        super(HealpyPool, self).__init__(name='')
+        super(HealpyPool, self).__init__()
 
         # check p
         if not p >= 1:
@@ -77,7 +77,7 @@ class HealpyPseudoConv(Model):
         :param kwargs: additional keyword arguments passed to the kreas 1D conv layer
         """
         # This is necessary for every Layer
-        super(HealpyPseudoConv, self).__init__(name='')
+        super(HealpyPseudoConv, self).__init__()
 
         # check p
         if not p >= 1:
@@ -135,7 +135,7 @@ class HealpyPseudoConv_Transpose(Model):
         :param kwargs: additional keyword arguments passed to the keras transpose conv layer
         """
         # This is necessary for every Layer
-        super(HealpyPseudoConv_Transpose, self).__init__(name='')
+        super(HealpyPseudoConv_Transpose, self).__init__()
 
         # check p
         if not p >= 1:

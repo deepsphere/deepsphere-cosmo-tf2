@@ -106,7 +106,7 @@ class HealpyGCNN(Sequential):
                 self.layers_use.append(layer)
 
         # Now that we have everything we can super init...
-        super(HealpyGCNN, self).__init__(name='', layers=self.layers_use)
+        super(HealpyGCNN, self).__init__(layers=self.layers_use)
 
     def _transform_indices(self, nside_in, nside_out, indices):
         """

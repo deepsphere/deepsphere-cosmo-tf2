@@ -28,7 +28,7 @@ class Chebyshev(Layer):
         """
 
         # This is necessary for every Layer
-        super(Chebyshev, self).__init__(name='')
+        super(Chebyshev, self).__init__()
 
         # save necessary params
         self.L = L
@@ -167,7 +167,7 @@ class Monomial(Layer):
         """
 
         # This is necessary for every Layer
-        super(Monomial, self).__init__(name='')
+        super(Monomial, self).__init__()
 
         # save necessary params
         self.L = L
@@ -305,7 +305,7 @@ class GCNN_ResidualLayer(Model):
         :param alpha: Coupling strength of the input -> layer(input) + alpha*input
         """
         # This is necessary for every Layer
-        super(GCNN_ResidualLayer, self).__init__(name='')
+        super(GCNN_ResidualLayer, self).__init__()
 
         # save variables
         self.layer_type = layer_type
