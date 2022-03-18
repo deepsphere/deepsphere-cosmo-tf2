@@ -23,4 +23,13 @@ def test_Graph_ViT():
 
     assert output.numpy().shape == (3,n_pix//4**p,num_heads*key_dim)
 
+    # same but wraped in TF function
+    @tf.function()
+    def call_layer(i):
+        o = graph_ViT(i)
+        return o
+    output = call_layer(m_in)
+
+    assert output.numpy().shape == (3, n_pix // 4 ** p, num_heads * key_dim)
+
 
