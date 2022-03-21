@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
+from scipy import sparse
+
 # Helper Functions
 ##################
 
@@ -44,6 +46,61 @@ def scaled_dot_product_attention(q, k, v, mask):
     output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
 
     return output, attention_weights
+
+
+def scaled_dot_product_sparse_attention(q, k, v, mask):
+    """Calculate the attention weights.
+    q, k, v must have matching leading dimensions.
+    k, v must have matching penultimate dimension, i.e.: seq_len_k = seq_len_v.
+    The mask is given as a 2D array of indices corresponding to the adjacency
+
+    Args:
+    q: query shape == (..., seq_len_q, depth)
+    k: key shape == (..., seq_len_k, depth)
+    v: value shape == (..., seq_len_v, depth_v)
+    mask: 2D array of sparse indices coming from the adjacency matrix of the underlying graph
+
+    Returns:
+    output
+
+    Function taken from:
+    https://www.tensorflow.org/text/tutorials/transformer
+    """
+
+    # shape for scale and matrix
+    dim = tf.shape(k)
+    dk = tf.cast(dim[-1], tf.float32)
+
+    # lookup of key and query (need a reorder because lookup is only first dim and currently we have
+    # (batch, num_heads, sequence, embed)
+    q = tf.transpose(q, [2, 0, 1, 3])
+    q_part = tf.nn.embedding_lookup(params=q, ids=mask[:,0])
+    k = tf.transpose(k, [2, 0, 1, 3])
+    k_part = tf.nn.embedding_lookup(params=k, ids=mask[:,1])
+
+    # now the scaled dot product
+    matmul_qk = tf.reduce_sum(q_part*k_part, axis=-1, keepdims=True) / tf.math.sqrt(dk)
+
+    # one option would be to transform matmul_qk into a sparse matrix and then use sparse softmax and
+    # sparse dense matmul to do the weighted sum of the values. However, this would require to duplicate the
+    # indices (mask) for every head and element in the batch. We therefore perform another embedding lookup for the
+    # values and then do the weighted sum with the segmented sum.
+    v = tf.transpose(v, [2, 0, 1, 3])
+    v_part = tf.nn.embedding_lookup(params=v, ids=mask[:, 1])
+
+    # get the unscales softmax
+    unscaled_softmax = tf.exp(matmul_qk)
+    weighted_values = v_part*unscaled_softmax
+
+    # get the weights
+    softmax_sum = tf.math.segment_sum(data=unscaled_softmax, segment_ids=mask[:,0])
+    value_sum = tf.math.segment_sum(data=weighted_values, segment_ids=mask[:,0])
+
+    # this is now a tensor with shape (sequence, batch, num_heads, depth_v)
+    output = value_sum/softmax_sum
+    output = tf.transpose(output, [1, 2, 0, 3])
+
+    return output
 
 
 # Layers
@@ -91,17 +148,23 @@ class MultiHeadAttention(Layer):
     A simple multi head attention layer followed by a single layer MLP according to
     https://www.tensorflow.org/text/tutorials/transformer
     """
-    def __init__(self, d_model, num_heads, use_norm=True, activation="relu"):
+    def __init__(self, d_model, num_heads, use_norm=True, activation="relu", sparse_A_indices=None):
         """
         Initializes the multiheaded attention layer.
         :param d_model: dimension of the key, query and value (total, will be split to the heads)
         :param num_heads: Number of head in the layer
         :param use_norm: If true, use layer norm
+        :param sparse_A_indices: Indices used as an attention mask, assumes that the occupancy of the matrix is
+                                 extremely low (< 1%) and uses tf.nn.embedding_lookup to perform the masking
         """
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
         self.use_norm = use_norm
+        if sparse_A_indices is not None:
+            self.sparse_A_indices = tf.convert_to_tensor(sparse_A_indices, dtype=tf.int64)
+        else:
+            self.sparse_A_indices = None
 
         assert d_model % self.num_heads == 0
 
@@ -132,7 +195,8 @@ class MultiHeadAttention(Layer):
         """
         Calls the layer
         :param inputs: The input used for the multi headed attention
-        :param mask: mask to apply to the attention must be broadcastable to the q, k product
+        :param mask: mask to apply to the attention must be broadcastable to the q, k product. This will be ignored
+                     if the layer was initialized with sparse_A_indices
         :param args: additional arguments not used but there to be compatible with the normal call routine
         :param kwargs: additional keyword arguments not used but there to be compatible with the normal call routine
         """
@@ -151,7 +215,10 @@ class MultiHeadAttention(Layer):
 
         # scaled_attention.shape == (batch_size, num_heads, seq_len_q, depth)
         # attention_weights.shape == (batch_size, num_heads, seq_len_q, seq_len_k)
-        scaled_attention, attention_weights = scaled_dot_product_attention(q, k, v, mask)
+        if self.sparse_A_indices is None:
+            scaled_attention, attention_weights = scaled_dot_product_attention(q, k, v, mask)
+        else:
+            scaled_attention = scaled_dot_product_sparse_attention(q, k, v, self.sparse_A_indices)
 
         scaled_attention = tf.transpose(scaled_attention,
                                         perm=[0, 2, 1, 3])  # (batch_size, seq_len_q, num_heads, depth)
@@ -176,7 +243,7 @@ class MultiHeadAttention(Layer):
 
 class Graph_ViT(Layer):
     """
-    A visual transformer layer for healpy graphs
+    A visual transformer layer for (healpy) graphs
 
     This visual transformer is a very simple implementation of a transformer. It is based on the tutorial
     https://www.tensorflow.org/text/tutorials/transformer
@@ -273,3 +340,94 @@ class Graph_ViT(Layer):
 
         return x
 
+
+class Graph_Transformer(Layer):
+    """
+    A graph transformer layer for that takes edges information from the adjacency matrix
+
+    This transformer is based on
+    https://arxiv.org/pdf/2012.09699.pdf
+    note that this could be far more advanced and should be used as a starting point.
+
+    Since the input of the network is expected to be always the same graph type, we do not use the eigenvector
+    positional encoding but go for the standard positional encoding. Furthermore, the edge information is used
+    as a mask in the softmax without any edge features.
+    """
+
+    def __init__(self, A, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
+                 layer_norm=True):
+        """
+        Creates a visual transformer according to:
+        https://arxiv.org/pdf/2010.11929.pdf
+        by dividing the healpy graph into super pixels
+        :param A: The adjacency matrix of the graph
+        :param key_dim: Dimension of the key, query and value for the embedding in the multi head attention for each
+                        head. Note that this means that the initial embedding will be key_dim*num_heads
+        :param num_heads: Number of heads to learn in the multi head attention
+        :param positional_encoding: If True, add positional encoding to the superpixel embedding in the beginning.
+        :param n_layers: Number of TransformerEncoding layers after the initial embedding
+        :param activation: The activation function to use for the multiheaded attention
+        :param layer_norm: If layernorm should be used for the multiheaded attention
+        """
+
+        # This is necessary for every Layer
+        super(Graph_Transformer, self).__init__()
+
+        # save variables
+        self.A = A
+        self.key_dim = key_dim
+        self.num_heads = num_heads
+        self.embedding_size = self.key_dim*self.num_heads
+        self.positional_encoding = positional_encoding
+        self.n_layers = n_layers
+        self.activation = activation
+        self.layer_norm = layer_norm
+
+        # get the necessary stuff from the adjacency matrix, the indices returned by scipy with nonzero have the
+        # same ordering as TF SparseTensor
+        self.sparse_A_indices = tf.constant(np.array(sparse.csc_matrix.nonzero(self.A)).T, dtype=tf.int64)
+
+        # create the embedding with a simple dense layer -> keep all the nodes
+        self.embed = tf.keras.layers.Dense(self.embedding_size)
+        if self.positional_encoding:
+            self.pos_encoder = AddPositionEmbs()
+
+        # the multiheaded attention layers
+        assert n_layers >= 1, "Number of attention layers should be at least 1"
+        self.mha_layers = []
+        for i in range(n_layers):
+            self.mha_layers.append(MultiHeadAttention(d_model=self.embedding_size, num_heads=self.num_heads,
+                                                      use_norm=self.layer_norm, activation=self.activation,
+                                                      sparse_A_indices=self.sparse_A_indices))
+
+
+    def build(self, input_shape):
+        """
+        Builds the layer given an input shape
+        :param input_shape: shape of the input
+        """
+
+        # deal with the initial embedding
+        self.embed.build(input_shape)
+
+        # add the positional encoding
+        if self.positional_encoding:
+            self.pos_encoder.build(inputs_shape=input_shape)
+
+
+    def call(self, inputs, *args, **kwargs):
+        """
+        Calls the layer and performs all the operations
+        :param inputs: inputs to which the positional encoding will be added
+        :param args: additional arguments not used but there to be compatible with the normal call routine
+        :param kwargs: additional keyword arguments not used but there to be compatible with the normal call routine
+        """
+
+        # perform the initial embedding
+        x = self.embed(inputs)
+
+        # apply the attention layers
+        for mha in self.mha_layers:
+            x = mha(x)
+
+        return x
