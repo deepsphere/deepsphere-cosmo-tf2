@@ -1,4 +1,5 @@
 from .gnn_layers import *
+from .gnn_transformers import *
 
 
 class HealpyPool(Model):
@@ -301,3 +302,72 @@ class Healpy_ResidualLayer():
                                   activation=self.activation, act_before=self.act_before,
                                   use_bn=self.use_bn, norm_type=self.norm_type,
                                   bn_kwargs=self.bn_kwargs, alpha=self.alpha)
+
+class Healpy_ViT(Graph_ViT):
+    """
+    This is a wrapper for the Graph_ViT to have everything consistent syntax between everything
+    Since this layer does not need any additional quantities like the graph laplacian that is only available
+    at runtime, it is literally the same as Graph_ViT
+    """
+
+    def __init__(self, p, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
+                 layer_norm=True):
+        """
+        Creates a visual transformer according to:
+        https://arxiv.org/pdf/2010.11929.pdf
+        by dividing the healpy graph into super pixels
+        :param p: reduction factor >1 of the nside -> number of nodes reduces by 4^p, note that the layer only checks
+                  if the dimensionality of the input is evenly divisible by 4^p and not if the ordering is correct
+                  (should be nested ordering)
+        :param key_dim: Dimension of the key, query and value for the embedding in the multi head attention for each
+                        head. Note that this means that the initial embedding will be key_dim*num_heads
+        :param num_heads: Number of heads to learn in the multi head attention
+        :param positional_encoding: If True, add positional encoding to the superpixel embedding in the beginning.
+        :param n_layers: Number of TransformerEncoding layers after the initial embedding
+        :param activation: The activation function to use for the multiheaded attention
+        :param layer_norm: If layernorm should be used for the multiheaded attention
+        """
+
+        # just do the super init
+        super(Healpy_ViT, self).__init__(p=p, key_dim=key_dim, num_heads=num_heads,
+                                         positional_encoding=positional_encoding, n_layers=n_layers,
+                                         activation=activation, layer_norm=layer_norm)
+
+class Healpy_Transformer():
+    """
+    The wrapper layer for the Graph_Transformer layer
+    """
+
+    def __init__(self, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
+                 layer_norm=True):
+        """
+        Creates a visual transformer according to:
+        https://arxiv.org/pdf/2010.11929.pdf
+        by dividing the healpy graph into super pixels
+        :param key_dim: Dimension of the key, query and value for the embedding in the multi head attention for each
+                        head. Note that this means that the initial embedding will be key_dim*num_heads
+        :param num_heads: Number of heads to learn in the multi head attention
+        :param positional_encoding: If True, add positional encoding to the superpixel embedding in the beginning.
+        :param n_layers: Number of TransformerEncoding layers after the initial embedding
+        :param activation: The activation function to use for the multiheaded attention
+        :param layer_norm: If layernorm should be used for the multiheaded attention
+        """
+
+        # save variables
+        self.key_dim = key_dim
+        self.num_heads = num_heads
+        self.positional_encoding = positional_encoding
+        self.n_layers = n_layers
+        self.activation = activation
+        self.layer_norm = layer_norm
+
+    def _get_layer(self, A):
+        """
+        initializes the actual layer, should be called once the graph adjacency matrix has been calculated
+        :param A: the graph Adjacency matrix
+        :return: Graph_Transformer layer that can be called
+        """
+
+        return Graph_Transformer(A=A, key_dim=self.key_dim, num_heads=self.num_heads,
+                                 positional_encoding=self.positional_encoding, n_layers=self.n_layers,
+                                 activation=self.activation, layer_norm=self.layer_norm)

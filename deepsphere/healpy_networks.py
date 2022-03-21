@@ -43,7 +43,7 @@ class HealpyGCNN(Sequential):
         # first we check the consistency, by getting the total reduction factor of the nside
         self.reduction_fac = 1.0
         for layer in self.layers_in:
-            if isinstance(layer, (hp_nn.HealpyPool, hp_nn.HealpyPseudoConv)):
+            if isinstance(layer, (hp_nn.HealpyPool, hp_nn.HealpyPseudoConv, hp_nn.Healpy_ViT)):
                 self.reduction_fac *= 2 ** (layer.p)
             if isinstance(layer, hp_nn.HealpyPseudoConv_Transpose):
                 self.reduction_fac /= 2 ** (layer.p)
@@ -81,14 +81,19 @@ class HealpyGCNN(Sequential):
         current_indices = indices
 
         for layer in self.layers_in:
-            if isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.Healpy_ResidualLayer)):
+            if isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.Healpy_ResidualLayer,
+                                  hp_nn.Healpy_Transformer)):
                 # we need to calculate the current L and get the actual layer
                 sphere = SphereHealpix(subdivisions=current_nside, indexes=current_indices, nest=True,
                                        k=self.n_neighbors, lap_type='normalized')
                 current_L = sphere.L
-                actual_layer = layer._get_layer(current_L)
+                current_A = sphere.A
+                if isinstance(layer, hp_nn.Healpy_Transformer):
+                    actual_layer = layer._get_layer(current_A)
+                else:
+                    actual_layer = layer._get_layer(current_L)
                 self.layers_use.append(actual_layer)
-            elif isinstance(layer, (hp_nn.HealpyPool, hp_nn.HealpyPseudoConv)):
+            elif isinstance(layer, (hp_nn.HealpyPool, hp_nn.HealpyPseudoConv, hp_nn.Healpy_ViT)):
                 # a reduction is happening
                 new_nside = int(current_nside//2**layer.p)
                 current_indices = self._transform_indices(nside_in=current_nside, nside_out=new_nside,
