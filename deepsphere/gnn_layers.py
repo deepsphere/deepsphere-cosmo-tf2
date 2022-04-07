@@ -90,13 +90,11 @@ class Chebyshev(Model):
         if tf.keras.backend.floatx() == 'float64':
             self.sparse_L = tf.cast(self.sparse_L, tf.float64)
 
-    def call(self, input_tensor, training=False, *args, **kwargs):
+    def call(self, input_tensor, training=False):
         """
-        Calls the layer on a input tensor
+        Calls the layer on an input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)
-        :param args: further arguments
-        :param training: wheter we are training or not
-        :param kwargs: further keyword arguments
+        :param training: whether we are training or not
         :return: the output of the layer
         """
 
@@ -227,13 +225,11 @@ class Monomial(Model):
         if tf.keras.backend.floatx() == 'float64':
             self.sparse_L = tf.cast(self.sparse_L, tf.float64)
 
-    def call(self, input_tensor, training=False, *args, **kwargs):
+    def call(self, input_tensor, training=False):
         """
-        Calls the layer on a input tensor
+        Calls the layer on an input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)
-        :param training: wheter we are training or not
-        :param args: further arguments
-        :param kwargs: further keyword arguments
+        :param training: whether we are training or not
         :return: the output of the layer
         """
 
@@ -347,13 +343,11 @@ class GCNN_ResidualLayer(Model):
 
         self.alpha = alpha
 
-    def call(self, input_tensor, training=False, *args, **kwargs):
+    def call(self, input_tensor, training=False):
         """
-        Calls the layer on a input tensorf
+        Calls the layer on an input tensorf
         :param input_tensor: The input of the layer
-        :param training: wheter we are training or not
-        :param args: further arguments (ignored)
-        :param kwargs: further keyword arguments (ignored)
+        :param training: whether we are training or not
         :return: the output of the layer
         """
         x = self.layer1(input_tensor)

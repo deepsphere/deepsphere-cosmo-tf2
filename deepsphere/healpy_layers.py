@@ -49,12 +49,10 @@ class HealpyPool(Model):
         if n_nodes % self.filter_size != 0:
             raise IOError("Input shape {input_shape} not compatible with the filter size {self.filter_size}")
 
-    def call(self, input_tensor, *args, **kwargs):
+    def call(self, input_tensor):
         """
         Calls the layer on a input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)
-        :param args: further arguments
-        :param kwargs: further keyword arguments
         :return: the output of the layer
         """
 
@@ -107,12 +105,10 @@ class HealpyPseudoConv(Model):
             raise IOError(f"Input shape {input_shape} not compatible with the filter size {self.filter_size}")
         self.filter.build(input_shape)
 
-    def call(self, input_tensor, *args, **kwargs):
+    def call(self, input_tensor):
         """
         Calls the layer on a input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)
-        :param args: further arguments
-        :param kwargs: further keyword arguments
         :return: the output of the layer
         """
 
@@ -170,7 +166,7 @@ class HealpyPseudoConv_Transpose(Model):
 
         self.filter.build(input_shape)
 
-    def call(self, input_tensor, *args, **kwargs):
+    def call(self, input_tensor):
         """
         Calls the layer on a input tensor
         :param input_tensor: input of the layer shape (batch, nodes, channels)

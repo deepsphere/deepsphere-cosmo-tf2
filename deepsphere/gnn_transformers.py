@@ -191,14 +191,12 @@ class MultiHeadAttention(Model):
         x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
-    def call(self, inputs, mask=None, *args, **kwargs):
+    def call(self, inputs, mask=None):
         """
         Calls the layer
         :param inputs: The input used for the multi headed attention
         :param mask: mask to apply to the attention must be broadcastable to the q, k product. This will be ignored
                      if the layer was initialized with sparse_A_indices
-        :param args: additional arguments not used but there to be compatible with the normal call routine
-        :param kwargs: additional keyword arguments not used but there to be compatible with the normal call routine
         """
         batch_size = tf.shape(inputs)[0]
 
@@ -323,12 +321,10 @@ class Graph_ViT(Model):
             self.pos_encoder.build(inputs_shape=input_shape)
 
 
-    def call(self, inputs, *args, **kwargs):
+    def call(self, inputs):
         """
         Calls the layer and performs all the operations
         :param inputs: inputs to which the positional encoding will be added
-        :param args: additional arguments not used but there to be compatible with the normal call routine
-        :param kwargs: additional keyword arguments not used but there to be compatible with the normal call routine
         """
 
         # perform the initial embedding
@@ -415,12 +411,10 @@ class Graph_Transformer(Model):
             self.pos_encoder.build(inputs_shape=input_shape)
 
 
-    def call(self, inputs, *args, **kwargs):
+    def call(self, inputs):
         """
         Calls the layer and performs all the operations
         :param inputs: inputs to which the positional encoding will be added
-        :param args: additional arguments not used but there to be compatible with the normal call routine
-        :param kwargs: additional keyword arguments not used but there to be compatible with the normal call routine
         """
 
         # perform the initial embedding

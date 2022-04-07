@@ -133,7 +133,7 @@ def test_HealpyGCNN():
         tf.random.set_seed(12)
         model = HealpyGCNN(nside=nside_in, indices=indices, layers=layers)
         model.build(input_shape=(3, n_pix, 1))
-        out_new = model(m_in)
+        out_new = model(m_in, training=False)
 
         # output should be different
         assert not np.all(np.isclose(out.numpy(), out_new.numpy()))
@@ -142,7 +142,7 @@ def test_HealpyGCNN():
         model.load_weights(tempdir)
 
         # now it should be the same
-        out_new = model(m_in)
+        out_new = model(m_in, training=False)
         assert np.all(np.isclose(out.numpy(), out_new.numpy(), atol=1e-6))
 
     # test the use 4 graphing
@@ -176,6 +176,6 @@ def test_HealpyGCNN():
     model.build(input_shape=(3, n_pix, 2))
     model.summary(line_length=128)
 
-    out = model(m_in)
+    out = model(m_in, training=True)
 
     assert out.numpy().shape == (3, 4)
