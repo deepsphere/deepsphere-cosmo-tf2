@@ -3,12 +3,11 @@ from scipy import sparse
 from scipy.sparse.linalg import eigsh
 import tensorflow as tf
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Layer
 
 from . import utils
 
 
-class Chebyshev(Layer):
+class Chebyshev(Model):
     """
     A graph convolutional layer using the Chebyshev approximation
     """
@@ -148,7 +147,7 @@ class Chebyshev(Layer):
         return x
 
 
-class Monomial(Layer):
+class Monomial(Model):
     """
     A graph convolutional layer using Monomials
     """

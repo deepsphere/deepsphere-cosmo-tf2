@@ -2,6 +2,8 @@ import numpy as np
 
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
+from tensorflow.keras import Model
+
 
 from scipy import sparse
 
@@ -130,12 +132,10 @@ class AddPositionEmbs(Layer):
         pos_emb_shape = (1, inputs_shape[1], inputs_shape[2])
         self.pos_embedding = self.add_weight('pos_embedding', pos_emb_shape, initializer=self.posemb_init)
 
-    def call(self, inputs, *args, **kwargs):
+    def call(self, inputs):
         """
         Calls the layer and adds the positional encodings to the input tensor
         :param inputs: inputs to which the positional encoding will be added
-        :param args: additional arguments not used but there to be compatible with the normal call routine
-        :param kargs: additional keyword arguments not used but there to be compatible with the normal call routine
         """
         # inputs.shape is (batch_size, seq_len, emb_dim).
         pos_embedding = tf.cast(self.pos_embedding, inputs.dtype)
@@ -143,7 +143,7 @@ class AddPositionEmbs(Layer):
         return inputs + pos_embedding
 
 
-class MultiHeadAttention(Layer):
+class MultiHeadAttention(Model):
     """
     A simple multi head attention layer followed by a single layer MLP according to
     https://www.tensorflow.org/text/tutorials/transformer
@@ -241,7 +241,7 @@ class MultiHeadAttention(Layer):
         return output
 
 
-class Graph_ViT(Layer):
+class Graph_ViT(Model):
     """
     A visual transformer layer for (healpy) graphs
 
@@ -341,7 +341,7 @@ class Graph_ViT(Layer):
         return x
 
 
-class Graph_Transformer(Layer):
+class Graph_Transformer(Model):
     """
     A graph transformer layer for that takes edges information from the adjacency matrix
 
