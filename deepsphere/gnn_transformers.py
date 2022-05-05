@@ -330,6 +330,10 @@ class Graph_ViT(Model):
         # perform the initial embedding
         x = self.embed(inputs)
 
+        # add position embedding
+        if self.positional_encoding:
+            x = self.pos_encoder(x)
+
         # apply the attention layers
         for mha in self.mha_layers:
             x = mha(x)
@@ -353,9 +357,6 @@ class Graph_Transformer(Model):
     def __init__(self, A, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
                  layer_norm=True):
         """
-        Creates a visual transformer according to:
-        https://arxiv.org/pdf/2010.11929.pdf
-        by dividing the healpy graph into super pixels
         :param A: The adjacency matrix of the graph
         :param key_dim: Dimension of the key, query and value for the embedding in the multi head attention for each
                         head. Note that this means that the initial embedding will be key_dim*num_heads
@@ -419,6 +420,10 @@ class Graph_Transformer(Model):
 
         # perform the initial embedding
         x = self.embed(inputs)
+
+        # add position embedding
+        if self.positional_encoding:
+            x = self.pos_encoder(x)
 
         # apply the attention layers
         for mha in self.mha_layers:
