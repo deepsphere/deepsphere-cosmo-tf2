@@ -82,7 +82,7 @@ class HealpyGCNN(Sequential):
 
         for layer in self.layers_in:
             if isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.Healpy_ResidualLayer,
-                                  hp_nn.Healpy_Transformer)):
+                                  hp_nn.Healpy_Transformer,hp_nn.HealpyBernstein)):
                 # we need to calculate the current L and get the actual layer
                 sphere = SphereHealpix(subdivisions=current_nside, indexes=current_indices, nest=True,
                                        k=self.n_neighbors, lap_type='normalized')
