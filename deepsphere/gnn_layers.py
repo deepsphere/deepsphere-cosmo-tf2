@@ -371,3 +371,146 @@ class GCNN_ResidualLayer(Model):
             return self.activation(x) + self.alpha*input_tensor
         else:
             return self.activation(x + self.alpha*input_tensor)
+class Bernstein(Layer):
+    """
+    A graph convolutional layer using the Bernstein approximation
+    see https://arxiv.org/abs/2106.10994
+    """
+
+    def __init__(self, L, K, Fout=None, initializer=None, activation=None, use_bias=False,
+                 use_bn=False, **kwargs):
+        """
+        Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
+        :param L: The graph Laplacian (MxM), as numpy array
+        :param K: Order of the polynomial to use
+        :param Fout: Number of features (channels) of the output, default to number of input channels
+        :param initializer: initializer to use for weight initialisation
+        :param activation: the activation function to use after the layer, defaults to linear
+        :param use_bias: Use learnable bias weights
+        :param use_bn: Apply batch norm before adding the bias
+        :param kwargs: additional keyword arguments passed on to add_weight
+        """
+
+        # This is necessary for every Layer
+        super(Bernstein, self).__init__()
+
+        # save necessary params
+        self.L = L
+        self.K = K
+        self.Fout = Fout
+        self.use_bias = use_bias
+        self.use_bn = use_bn
+        if self.use_bn:
+            self.bn = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.9, epsilon=1e-5, center=False, scale=False)
+        self.initializer = initializer
+        if activation is None or callable(activation):
+            self.activation = activation
+        elif hasattr(tf.keras.activations, activation):
+            self.activation = getattr(tf.keras.activations, activation)
+        else:
+            raise ValueError(f"Could not find activation <{activation}> in tf.keras.activations...")
+        self.kwargs = kwargs
+
+        # Rescale Laplacian and store as a TF sparse tensor. Copy to not modify the shared L.
+        L = sparse.csr_matrix(L)
+        lmax = 1.02 * eigsh(L, k=1, which='LM', return_eigenvectors=False)[0]
+        L = utils.rescale_L(L, lmax=lmax, scale=0.75)
+        L = L.tocoo()
+        indices = np.column_stack((L.row, L.col))
+        L = tf.SparseTensor(indices, L.data, L.shape)
+        self.sparse_L = tf.sparse.reorder(L)
+
+    def build(self, input_shape):
+        """
+        Build the weights of the layer
+        :param input_shape: shape of the input, batch dim has to be defined
+        :return: the kernel variable to train
+        """
+
+        # get the input shape
+        Fin = int(input_shape[-1])
+
+        # get Fout if necessary
+        if self.Fout is None:
+            Fout = Fin
+        else:
+            Fout = self.Fout
+
+        if self.initializer is None:
+            # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
+            stddev = np.sqrt(6 /(Fin+Fout))
+            initializer = tf.initializers.TruncatedNormal(stddev=stddev)
+            self.kernel = self.add_weight("kernel", shape=[(self.K+1) * Fin, Fout],
+                                          initializer=initializer, **self.kwargs)
+        else:
+            self.kernel = self.add_weight("kernel", shape=[(self.K+1) * Fin, Fout],
+                                          initializer=self.initializer, **self.kwargs)
+
+        if self.use_bias:
+            self.bias = self.add_weight("bias", shape=[1, 1, Fout])
+
+        # we cast the sparse L to the current backend type
+        if tf.keras.backend.floatx() == 'float32':
+            self.sparse_L = tf.cast(self.sparse_L, tf.float32)
+        if tf.keras.backend.floatx() == 'float64':
+            self.sparse_L = tf.cast(self.sparse_L, tf.float64)
+
+    def call(self, input_tensor, training=False, *args, **kwargs):
+        """
+        Calls the layer on a input tensor
+        :param input_tensor: input of the layer shape (batch, nodes, channels)
+        :param args: further arguments
+        :param training: wheter we are training or not
+        :param kwargs: further keyword arguments
+        :return: the output of the layer
+        """
+
+        # shapes, this fun is necessary since sparse_matmul_dense in TF only supports
+        # the multiplication of 2d matrices, therefore one has to do some weird reshaping
+        # this is not strictly necessary but leads to a huge performance gain...
+        # See: https://arxiv.org/pdf/1903.11409.pdf
+        N, M, Fin = input_tensor.get_shape()
+        M, Fin = int(M), int(Fin)
+
+        # get Fout if necessary
+        if self.Fout is None:
+            Fout = Fin
+        else:
+            Fout = self.Fout
+
+        # Transform to Chebyshev basis
+        x0 = tf.transpose(input_tensor, perm=[1, 2, 0])  # M x Fin x N
+        x0 = tf.reshape(x0, [M, -1])  # M x Fin*N
+        
+        # list for stacking
+        stack = []
+        for i in range(0,self.K+1):
+            x1 = x0
+            theta = comb(self.K,i)/(2**self.K)
+            for j in range(i):
+                x2= tf.sparse.sparse_dense_matmul(self.sparse_L, x1)
+                x1 =x2
+            x2=x1
+            for k in range(self.K-i):
+                x3 = 2*x2-tf.sparse.sparse_dense_matmul(self.sparse_L, x2)
+                x2 =x3
+            x3 = theta*x3
+            stack.append(x3)
+        x = tf.stack(stack, axis=0)
+        x = tf.reshape(x, [(self.K+1), M, Fin, -1])  # K+1 x M x Fin x N
+        x = tf.transpose(x, perm=[3, 1, 2, 0])  # N x M x Fin x K+1
+        x = tf.reshape(x, [-1, Fin * (self.K+1)])  # N*M x Fin*K+1
+        # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
+        x = tf.matmul(x, self.kernel)  # N*M x Fout
+        x = tf.reshape(x, [-1, M, Fout])  # N x M x Fout
+
+        if self.use_bn:
+            x = self.bn(x, training=training)
+
+        if self.use_bias:
+            x = tf.add(x, self.bias)
+
+        if self.activation is not None:
+            x = self.activation(x)
+
+        return x
