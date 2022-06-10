@@ -367,7 +367,8 @@ class Healpy_Transformer():
         return Graph_Transformer(A=A, key_dim=self.key_dim, num_heads=self.num_heads,
                                  positional_encoding=self.positional_encoding, n_layers=self.n_layers,
                                  activation=self.activation, layer_norm=self.layer_norm)
-    class HealpyBernstein():
+
+class HealpyBernstein():
     """
     A helper class for a Bernstein layer using healpy indices instead of the general Layer
     """
