@@ -371,7 +371,7 @@ class GCNN_ResidualLayer(Model):
             return self.activation(x) + self.alpha*input_tensor
         else:
             return self.activation(x + self.alpha*input_tensor)
-class Bernstein(Layer):
+class Bernstein(Model):
     """
     A graph convolutional layer using the Bernstein approximation
     see https://arxiv.org/abs/2106.10994
