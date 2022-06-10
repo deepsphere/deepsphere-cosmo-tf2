@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 
 from . import utils
-
+from scipy.special import comb
 
 class Chebyshev(Model):
     """
