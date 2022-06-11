@@ -108,6 +108,8 @@ def test_HealpyGCNN():
               hp_nn.HealpyPseudoConv(p=2, Fout=16),
               hp_nn.HealpyMonomial(K=5, Fout=32),
               hp_nn.HealpyMonomial(K=5, Fout=32),
+              hp_nn.HealpyBernstein(K=5, Fout=32),
+              hp_nn.HealpyBernstein(K=5, Fout=32),
               hp_nn.Healpy_Transformer(key_dim=8, num_heads=4),
               hp_nn.Healpy_Transformer(key_dim=8, num_heads=4, n_layers=2),
               hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5}),

@@ -60,6 +60,32 @@ def test_Monimials():
     new_1 = mon(x)
 
 
+def test_Bernstein():
+    # create the layer
+    tf.random.set_seed(11)
+    L = tf.random.normal(shape=(3, 3), seed=11)
+    # make sym
+    L = tf.matmul(L, tf.transpose(L))
+    x = tf.random.normal(shape=(5, 3, 7), seed=12)
+    Fout = 3
+    K = 4
+
+    # create the layer
+    stddev = 1 / np.sqrt(7 * (K + 0.5) / 2)
+    initializer = tf.initializers.RandomNormal(stddev=stddev, seed=13)
+    bern = gnn_layers.Bernstein(L=L.numpy(), Fout=Fout, K=K, initializer=initializer)
+    new = bern(x)
+
+    # same with new activation
+    bern = gnn_layers.Bernstein(L=L.numpy(), Fout=Fout, K=K, initializer=initializer, activation="linear")
+    new = bern(x)
+
+    # now we test bias and batch norm
+    bern = gnn_layers.Bernstein(L=L.numpy(), Fout=Fout, K=K, initializer=initializer, activation="linear",
+                                use_bias=True, use_bn=True)
+    new = bern(x)
+
+
 def test_GCNN_ResidualLayer():
     # we get a random map to pool
     n_pix = hp.nside2npix(4)
