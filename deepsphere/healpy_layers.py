@@ -367,3 +367,40 @@ class Healpy_Transformer():
         return Graph_Transformer(A=A, key_dim=self.key_dim, num_heads=self.num_heads,
                                  positional_encoding=self.positional_encoding, n_layers=self.n_layers,
                                  activation=self.activation, layer_norm=self.layer_norm)
+
+class HealpyBernstein():
+    """
+    A helper class for a Bernstein layer using healpy indices instead of the general Layer
+    """
+    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False,
+                 use_bn=False, **kwargs):
+        """
+        Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
+        :param K: Order of the polynomial to use
+        :param Fout: Number of features (channels) of the output, default to number of input channels
+        :param initializer: initializer to use for weight initialisation
+        :param activation: the activation function to use after the layer, defaults to linear
+        :param use_bias: Use learnable bias weights
+        :param use_bn: Apply batch norm before adding the bias
+        :param kwargs: additional keyword arguments passed on to add_weight
+        """
+        # we only save the variables here
+        self.K = K
+        self.Fout = Fout
+        self.initializer = initializer
+        self.activation = activation
+        self.use_bias = use_bias
+        self.use_bn = use_bn
+        self.kwargs = kwargs
+
+    def _get_layer(self, L):
+        """
+        initializes the actual layer, should be called once the graph Laplacian has been calculated
+        :param L: the graph laplacian
+        :return: Chebyshev5 layer that can be called
+        """
+
+        # now we init the layer
+        return Bernstein(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
+                          use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
+
