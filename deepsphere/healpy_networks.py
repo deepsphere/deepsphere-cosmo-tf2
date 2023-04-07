@@ -67,7 +67,7 @@ class HealpyGCNN(Sequential):
         mask_in = hp.ud_grade(map_in=mask_out, nside_out=self.nside_in, order_in="NEST", order_out="NEST")
         transformed_indices = np.arange(hp.nside2npix(self.nside_in))[mask_in > 1e-12]
 
-        if not np.all(np.sort(transformed_indices.astype(np.int)) == np.sort(self.indices_in.astype(np.int))):
+        if not np.all(np.sort(transformed_indices.astype(int)) == np.sort(self.indices_in.astype(int))):
             raise ValueError("With the given indices it would not be possible to properly reduce the input maps "
                              "with the reduction factor determined by the layers. Use the function "
                              "<extend_indices> from utils with the determined minimal nside to make your set of "
