@@ -5,6 +5,7 @@ dist/
 deepsphere.egg-info/
 *.ipynb_checkpoints*
 *.pyc
+*~
 
 # files for pytest and coverage
 /tests/test_plots/
