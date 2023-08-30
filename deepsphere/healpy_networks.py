@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 from tensorflow.keras.models import Sequential
 import healpy as hp
 from pygsp.graphs import SphereHealpix
@@ -16,7 +17,7 @@ class HealpyGCNN(Sequential):
     A graph convolutional network using the Keras model API and the layers from the model
     """
 
-    def __init__(self, nside, indices, layers, n_neighbors=8):
+    def __init__(self, nside, indices, layers, n_neighbors=8, max_batch_size=None):
         """
         Initializes a graph convolutional neural network using the healpy pixelization scheme
         :param nside: integeger, the nside of the input
@@ -24,6 +25,10 @@ class HealpyGCNN(Sequential):
         :param layers: a list of layers that will make up the neural network
         :param n_neighbors: Number of neighbors considered when building the graph, currently supported values are:
                             8 (default), 20, 40 and 60.
+        :param max_batch_size: Maximal batch size this network is supposed to handle. This determines the number of 
+                                splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied
+                                independent of the actual batch size. Defaults to None, then no such precautions are 
+                                taken, which may cause an error.
         """
         # This is necessary for every Layer
         super(HealpyGCNN, self).__init__(name='')
@@ -80,6 +85,9 @@ class HealpyGCNN(Sequential):
         current_nside = self.nside_in
         current_indices = indices
 
+        # in general, the feature dimension of the input is unknown
+        current_Fin = None
+
         for layer in self.layers_in:
             if isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.Healpy_ResidualLayer,
                                   hp_nn.Healpy_Transformer,hp_nn.HealpyBernstein)):
@@ -90,6 +98,21 @@ class HealpyGCNN(Sequential):
                 current_A = sphere.A
                 if isinstance(layer, hp_nn.Healpy_Transformer):
                     actual_layer = layer._get_layer(current_A)
+                elif isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.HealpyBernstein,
+                                hp_nn.Healpy_ResidualLayer)):
+                    if (max_batch_size is not None) and (current_Fin is not None):
+                        n_matmul_splits = 1
+                        while not (
+                            # tf.split only does even splits for integer arguments
+                            (max_batch_size * current_Fin % n_matmul_splits == 0) and 
+                            # due to tf.sparse.sparse_dense_matmul
+                            (n_matmul_splits >= max_batch_size * current_Fin * len(current_L.indices) / 2**31)
+                        ):
+                            n_matmul_splits += 1
+                        actual_layer = layer._get_layer(current_L, n_matmul_splits)
+
+                    else:
+                        actual_layer = layer._get_layer(current_L)
                 else:
                     actual_layer = layer._get_layer(current_L)
                 self.layers_use.append(actual_layer)
@@ -109,6 +132,12 @@ class HealpyGCNN(Sequential):
                 self.layers_use.append(layer)
             else:
                 self.layers_use.append(layer)
+
+            try:
+                current_Fin = layer.Fout
+            except AttributeError:
+                # don't update, this is for example the case for residual or pooling layers that have Fin = Fout
+                pass 
 
         # Now that we have everything we can super init...
         super(HealpyGCNN, self).__init__(layers=self.layers_use)

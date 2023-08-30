@@ -204,16 +204,18 @@ class HealpyChebyshev():
         self.use_bn = use_bn
         self.kwargs = kwargs
 
-    def _get_layer(self, L):
+    def _get_layer(self, L, n_matmul_splits=1):
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Chebyshev5 layer that can be called
         """
 
         # now we init the layer
         return Chebyshev(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                          use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
+                          use_bias=self.use_bias, use_bn=self.use_bn, n_matmul_splits=n_matmul_splits, **self.kwargs)
 
 
 class HealpyMonomial():
@@ -241,16 +243,18 @@ class HealpyMonomial():
         self.use_bn = use_bn
         self.kwargs = kwargs
 
-    def _get_layer(self, L):
+    def _get_layer(self, L, n_matmul_splits=1):
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Monomial layer that can be called
         """
 
         # now we init the layer
         return Monomial(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                        use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
+                        use_bias=self.use_bias, use_bn=self.use_bn, n_matmul_splits=n_matmul_splits, **self.kwargs)
 
 
 class Healpy_ResidualLayer():
@@ -285,14 +289,17 @@ class Healpy_ResidualLayer():
         self.bn_kwargs = bn_kwargs
         self.alpha = alpha
 
-    def _get_layer(self, L):
+    def _get_layer(self, L, n_matmul_splits=1):
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: GCNN_ResidualLayer layer that can be called
         """
         # we add the graph laplacian to all kwargs
         self.layer_kwargs.update({"L": L})
+        self.layer_kwargs.update({"n_matmul_splits": n_matmul_splits})
 
         return GCNN_ResidualLayer(layer_type=self.layer_type, layer_kwargs=self.layer_kwargs,
                                   activation=self.activation, act_before=self.act_before,
@@ -393,14 +400,16 @@ class HealpyBernstein():
         self.use_bn = use_bn
         self.kwargs = kwargs
 
-    def _get_layer(self, L):
+    def _get_layer(self, L, n_matmul_splits=1):
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Chebyshev5 layer that can be called
         """
 
         # now we init the layer
         return Bernstein(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                          use_bias=self.use_bias, use_bn=self.use_bn, **self.kwargs)
+                          use_bias=self.use_bias, use_bn=self.use_bn, n_matmul_splits=n_matmul_splits, **self.kwargs)
 

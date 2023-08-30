@@ -13,7 +13,7 @@ class Chebyshev(Model):
     """
 
     def __init__(self, L, K, Fout=None, initializer=None, activation=None, use_bias=False,
-                 use_bn=False, **kwargs):
+                 use_bn=False, n_matmul_splits=1, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param L: The graph Laplacian (MxM), as numpy array
@@ -23,6 +23,8 @@ class Chebyshev(Model):
         :param activation: the activation function to use after the layer, defaults to linear
         :param use_bias: Use learnable bias weights
         :param use_bn: Apply batch norm before adding the bias
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :param kwargs: additional keyword arguments passed on to add_weight
         """
 
@@ -44,6 +46,7 @@ class Chebyshev(Model):
             self.activation = getattr(tf.keras.activations, activation)
         else:
             raise ValueError(f"Could not find activation <{activation}> in tf.keras.activations...")
+        self.n_matmul_splits = n_matmul_splits
         self.kwargs = kwargs
 
         # Rescale Laplacian and store as a TF sparse tensor. Copy to not modify the shared L.
@@ -119,10 +122,10 @@ class Chebyshev(Model):
         stack = [x0]
 
         if self.K > 1:
-            x1 = tf.sparse.sparse_dense_matmul(self.sparse_L, x0)
+            x1 = utils.split_sparse_dense_matmul(self.sparse_L, x0, self.n_matmul_splits)
             stack.append(x1)
         for k in range(2, self.K):
-            x2 = 2 * tf.sparse.sparse_dense_matmul(self.sparse_L, x1) - x0  # M x Fin*N
+            x2 = 2 * utils.split_sparse_dense_matmul(self.sparse_L, x1, self.n_matmul_splits) - x0  # M x Fin*N
             stack.append(x2)
             x0, x1 = x1, x2
         x = tf.stack(stack, axis=0)
@@ -150,7 +153,7 @@ class Monomial(Model):
     A graph convolutional layer using Monomials
     """
     def __init__(self, L, K, Fout=None, initializer=None, activation=None, use_bias=False,
-                 use_bn=False, **kwargs):
+                 use_bn=False, n_matmul_splits=1, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param L: The graph Laplacian (MxM), as numpy array
@@ -160,6 +163,8 @@ class Monomial(Model):
         :param activation: the activation function to use after the layer, defaults to linear
         :param use_bias: Use learnable bias weights
         :param use_bn: Apply batch norm before adding the bias
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :param kwargs: additional keyword arguments passed on to add_weight
         """
 
@@ -181,6 +186,7 @@ class Monomial(Model):
             self.activation = getattr(tf.keras.activations, activation)
         else:
             raise ValueError(f"Could not find activation <{activation}> in tf.keras.activations...")
+        self.n_matmul_splits = n_matmul_splits
         self.kwargs = kwargs
 
         # Rescale Laplacian and store as a TF sparse tensor. Copy to not modify the shared L.
@@ -254,7 +260,7 @@ class Monomial(Model):
         stack = [x0]
 
         for k in range(1, self.K):
-            x1 = tf.sparse.sparse_dense_matmul(self.sparse_L, x0)  # M x Fin*N
+            x1 = utils.split_sparse_dense_matmul(self.sparse_L, x0, self.n_matmul_splits)  # M x Fin*N
             stack.append(x1)
             x0 = x1
 
@@ -378,7 +384,7 @@ class Bernstein(Model):
     """
 
     def __init__(self, L, K, Fout=None, initializer=None, activation=None, use_bias=False,
-                 use_bn=False, **kwargs):
+                 use_bn=False, n_matmul_splits=1, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param L: The graph Laplacian (MxM), as numpy array
@@ -388,6 +394,8 @@ class Bernstein(Model):
         :param activation: the activation function to use after the layer, defaults to linear
         :param use_bias: Use learnable bias weights
         :param use_bn: Apply batch norm before adding the bias
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :param kwargs: additional keyword arguments passed on to add_weight
         """
 
@@ -409,6 +417,7 @@ class Bernstein(Model):
             self.activation = getattr(tf.keras.activations, activation)
         else:
             raise ValueError(f"Could not find activation <{activation}> in tf.keras.activations...")
+        self.n_matmul_splits = n_matmul_splits
         self.kwargs = kwargs
 
         # Rescale Laplacian and store as a TF sparse tensor. Copy to not modify the shared L.
@@ -488,11 +497,11 @@ class Bernstein(Model):
             x1 = x0
             theta = comb(self.K,i)/(2**self.K)
             for j in range(i):
-                x2= tf.sparse.sparse_dense_matmul(self.sparse_L, x1)
+                x2= utils.split_sparse_dense_matmul(self.sparse_L, x1, self.n_matmul_splits)
                 x1 =x2
             x2=x1
             for k in range(self.K-i):
-                x3 = 2*x2-tf.sparse.sparse_dense_matmul(self.sparse_L, x2)
+                x3 = 2 * x2 - utils.split_sparse_dense_matmul(self.sparse_L, x2, self.n_matmul_splits)
                 x2 =x3
             x3 = theta*x3
             stack.append(x3)

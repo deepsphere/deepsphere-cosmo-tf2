@@ -3,6 +3,7 @@
 import numpy as np
 from scipy import sparse
 import healpy as hp
+import tensorflow as tf
 
 
 def extend_indices(indices, nside_in, nside_out, nest=True):
@@ -42,3 +43,32 @@ def rescale_L(L, lmax=2, scale=1):
     L *= 2 * scale / lmax
     L -= I
     return L
+
+@tf.function
+def split_sparse_dense_matmul(sparse_tensor, dense_tensor, n_splits=1):
+    """
+    Splits axis 1 of the dense_tensor such that tensorflow can handle the size of the computation.
+    :param sparse_tensor: Input sparse tensor of rank 2. 
+    :param dense_tensor: Input dense tensor of rank 2.
+    :param n_splits: Integer number of splits applied to axis 1 of dense_tensor.
+
+    For reference, the error message to be avoided is:
+
+    'Cannot use GPU when output.shape[1] * nnz(a) > 2^31 [Op:SparseTensorDenseMatMul]
+
+    Call arguments received by layer "chebyshev" (type Chebyshev):
+    • input_tensor=tf.Tensor(shape=(208, 7264, 128), dtype=float32)
+    • training=False'
+    """
+    if n_splits > 1:
+        print(f"Tracing... Due to tensor size, tf.sparse.sparse_dense_matmul is executed over {n_splits} splits."
+              f" Beware of the resulting performance penalty.")
+        dense_splits = tf.split(dense_tensor, n_splits, axis=1)
+        result = []
+        for dense_split in dense_splits:
+            result.append(tf.sparse.sparse_dense_matmul(sparse_tensor, dense_split))
+        result = tf.concat(result, axis=1)
+    else:
+        result = tf.sparse.sparse_dense_matmul(sparse_tensor, dense_tensor)
+
+    return result
