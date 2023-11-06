@@ -6,3 +6,4 @@ matplotlib
 PyGSP @ git+https://github.com/jafluri/pygsp.git@sphere-graphs
 tqdm
 pytest
+sklearn
