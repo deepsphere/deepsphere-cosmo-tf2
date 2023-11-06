@@ -17,7 +17,7 @@ class HealpyGCNN(Sequential):
     A graph convolutional network using the Keras model API and the layers from the model
     """
 
-    def __init__(self, nside, indices, layers, n_neighbors=8, max_batch_size=None):
+    def __init__(self, nside, indices, layers, n_neighbors=8, max_batch_size=None, initial_Fin=None):
         """
         Initializes a graph convolutional neural network using the healpy pixelization scheme
         :param nside: integeger, the nside of the input
@@ -29,6 +29,8 @@ class HealpyGCNN(Sequential):
                                 splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied
                                 independent of the actual batch size. Defaults to None, then no such precautions are 
                                 taken, which may cause an error.
+        :param initial_Fin: Initial number of input features. Defaults to None, then like for max_batch_size, there
+                            are no precautions in the tf.sparse.sparse_dense_matmul operation taken. 
         """
         # This is necessary for every Layer
         super(HealpyGCNN, self).__init__(name='')
@@ -85,8 +87,8 @@ class HealpyGCNN(Sequential):
         current_nside = self.nside_in
         current_indices = indices
 
-        # in general, the feature dimension of the input is unknown
-        current_Fin = None
+        # the feature dimension of the input is only known here if it is explicitly specified
+        current_Fin = initial_Fin
 
         for layer in self.layers_in:
             if isinstance(layer, (hp_nn.HealpyChebyshev, hp_nn.HealpyMonomial, hp_nn.Healpy_ResidualLayer,
