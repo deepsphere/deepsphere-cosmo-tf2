@@ -216,7 +216,7 @@ class HealpyChebyshev():
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
         :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
-            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
+                                tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Chebyshev5 layer that can be called
         """
 
@@ -255,7 +255,7 @@ class HealpyMonomial():
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
         :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
-            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
+                                tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Monomial layer that can be called
         """
 
@@ -301,7 +301,7 @@ class Healpy_ResidualLayer():
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
         :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
-            tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
+                                tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: GCNN_ResidualLayer layer that can be called
         """
         # we add the graph laplacian to all kwargs
@@ -452,27 +452,29 @@ class HealpySmoothing(Model):
         :param nside: The healpy nside of the input.
         :param indices: 1d array of indices, corresponding to the pixel ids of the input map footprint.
         :param nest: Whether the maps are stored in healpix NEST ordering. Defaults to True, which is
-            always the case for DeepSphere networks.
+                     always the case for DeepSphere networks.
         :param mask: Boolean tensor of shape (n_indices, 1) or (n_indices, n_channels)
-            that indicates which part of the patch defined by the indices is actually populated. Defaults to None, then
-            no additional masking is applied and the maps bleed into the zero padding.
+                     that indicates which part of the patch defined by the indices is actually populated. Defaults to 
+                     None, then no additional masking is applied and the maps bleed into the zero padding.
         :param fwhm: FWHM of the Gaussian smoothing kernel. Can be either a single
-            or per channel number. In the latter case, the smoothing scale of the kernel is chosen as the smallest
-            value and the rest achieved by smoothing repeatedly. Defaults to None, then sigma needs to be specified.
+                     or per channel number. In the latter case, the smoothing scale of the kernel is chosen as the 
+                     smallest value and the rest achieved by smoothing repeatedly. Defaults to None, then sigma needs 
+                     to be specified.
         :param sigma: Identical functionality as the fwhm argument, but specifies the standard deviation of the 
-            Gaussian smoothing kernel instead. Defaults to None, then fwhm needs to be specified.
+                      Gaussian smoothing kernel instead. Defaults to None, then fwhm needs to be specified.
         :param n_sigma_support: Determines the radius from which the smoothing is calculated. Specifically, this value 
-            determines which nearest neighbors are included. Defaults to 3, then roughly 99.7% of the Gaussian 
-            probability mass is accounted for.
+                                determines which nearest neighbors are included. Defaults to 3, then roughly 99.7% of 
+                                the Gaussian probability mass is accounted for.
         :param arcmin: Whether fwhm and sigma are specified in arcmin or radian. Defaults to True.
         :param per_channel_repetitions: When a single value is specified for fwhm or sigma, this argument determines 
-            the per channel number of times the smoothing kernel is applied. Defaults to None.
+                                        the per channel number of times the smoothing kernel is applied. Defaults to 
+                                        None.
         :param data_path: Path where the sparse kernel tensor is stored to, and if available, loaded from. Defaults to 
-            None, then the sparse kernel tensor is neither saved nor loaded.
+                          None, then the sparse kernel tensor is neither saved nor loaded.
         :param max_batch_size: Maximal batch size this network is supposed to handle. This determines the number of 
-            splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied independent of the 
-            actual batch size. Defaults to None, then an attempt is made to infer this from the input, which may cause 
-            an error.
+                               splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied 
+                               independent of the actual batch size. Defaults to None, then an attempt is made to infer 
+                               this from the input, which may cause an error.
         """
         super(HealpySmoothing, self).__init__()
 
