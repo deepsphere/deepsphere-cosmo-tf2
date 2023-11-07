@@ -442,42 +442,37 @@ class HealpySmoothing(Model):
         data_path: Optional[str] = None,
         max_batch_size: Optional[int] = None,
     ) -> None:
-        """Create the sparse kernel tensor with which the maps are smoothed.
-
+        """
+        Initialize the sparse kernel tensor with which the maps are smoothed.
         Note that the smoothing is always done with a single base sigma. When different smoothing scales are specified
-        for the different input channels,that kernel is applied repeatedly to channels which require a larger smoothing
-        scale, by exploiting the fact that the convolution of two Gaussians with standard deviations sigma_1 and
-        sigma_2 is a Gaussian with sigma_3 = sqrt(sigma_1^2 + sigma_2^2). This implementation saves GPU memory, as the
-        sparse kernel matrix can grow to be very large.
-
-        Args:
-            nside (int): The healpy nside of the input.
-            indices (np.ndarray): 1d array of indices, corresponding to the pixel ids of the input map footprint.
-            nest (bool, optional): Whether the maps are stored in healpix NEST ordering. Defaults to True, which is
-                always the case for DeepSphere networks.
-            mask (Optional[tf.Tensor], optional): Boolean tensor of shape (n_indices, 1) or (n_indices, n_channels)
-                that indicates which part of the patch defined by the indices is actually populated. Defaults to None,
-                then no additional masking is applied and the maps bleed into the zero padding.
-            fwhm (Optional[Union[int, float]], optional): FWHM of the Gaussian smoothing kernel. Can be either a single
-                or per channel number. In the latter case, the smoothing scale of the kernel is chosen as the smallest
-                value and the rest achieved by smoothing repeatedly. Defaults to None, then sigma needs to be
-                specified.
-            sigma (Optional[Union[int, float]], optional): Identical functionality as the fwhm argument, but specifies
-                the standard deviation of the Gaussian smoothing kernel instead. Defaults to None, then fwhm needs to
-                be specified.
-            n_sigma_support (Union[int, float], optional): Determines the radius from which the smoothing is
-                calculated. Specifically, this value determines which nearest neighbors are included. Defaults to 3,
-                then roughly 99.7% of the Gaussian probability mass is accounted for.
-            arcmin (bool, optional): Whether fwhm and sigma are specified in arcmin or radian. Defaults to True.
-            per_channel_repetitions (Optional[Union[list, np.ndarray]], optional): When a single value is specified for
-                fwhm or sigma, this argument determines the per channel number of times the smoothing kernel is
-                applied. Defaults to None.
-            data_path (Optional[str], optional): Path where the sparse kernel tensor is stored to, and if available,
-                loaded from. Defaults to None, then the sparse kernel tensor is neither saved nor loaded.
-            max_batch_size (int, optional): Maximal batch size this network is supposed to handle. This determines the
-                number of splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied
-                independent of the actual batch size. Defaults to None, then an attempt is made to infer this from the
-                input, which may cause an error.
+        for the different input channels, that kernel is applied repeatedly to channels which require a larger 
+        smoothing scale, by exploiting the fact that the convolution of two Gaussians with standard deviations sigma_1 
+        and sigma_2 is a Gaussian with sigma_3 = sqrt(sigma_1^2 + sigma_2^2). This implementation saves GPU memory, as 
+        the sparse kernel matrix can grow to be very large.
+        :param nside: The healpy nside of the input.
+        :param indices: 1d array of indices, corresponding to the pixel ids of the input map footprint.
+        :param nest: Whether the maps are stored in healpix NEST ordering. Defaults to True, which is
+            always the case for DeepSphere networks.
+        :param mask: Boolean tensor of shape (n_indices, 1) or (n_indices, n_channels)
+            that indicates which part of the patch defined by the indices is actually populated. Defaults to None, then
+            no additional masking is applied and the maps bleed into the zero padding.
+        :param fwhm: FWHM of the Gaussian smoothing kernel. Can be either a single
+            or per channel number. In the latter case, the smoothing scale of the kernel is chosen as the smallest
+            value and the rest achieved by smoothing repeatedly. Defaults to None, then sigma needs to be specified.
+        :param sigma: Identical functionality as the fwhm argument, but specifies the standard deviation of the 
+            Gaussian smoothing kernel instead. Defaults to None, then fwhm needs to be specified.
+        :param n_sigma_support: Determines the radius from which the smoothing is calculated. Specifically, this value 
+            determines which nearest neighbors are included. Defaults to 3, then roughly 99.7% of the Gaussian 
+            probability mass is accounted for.
+        :param arcmin: Whether fwhm and sigma are specified in arcmin or radian. Defaults to True.
+        :param per_channel_repetitions: When a single value is specified for fwhm or sigma, this argument determines 
+            the per channel number of times the smoothing kernel is applied. Defaults to None.
+        :param data_path: Path where the sparse kernel tensor is stored to, and if available, loaded from. Defaults to 
+            None, then the sparse kernel tensor is neither saved nor loaded.
+        :param max_batch_size: Maximal batch size this network is supposed to handle. This determines the number of 
+            splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied independent of the 
+            actual batch size. Defaults to None, then an attempt is made to infer this from the input, which may cause 
+            an error.
         """
         super(HealpySmoothing, self).__init__()
 
@@ -581,12 +576,11 @@ class HealpySmoothing(Model):
             print(f"Successfully created the sparse kernel tensor")
 
     def build(self, input_shape: tuple) -> None:
-        """Checks whether the input shape is compatible with the initialized layer. Note that the sparse-dense matrix
+        """
+        Checks whether the input shape is compatible with the initialized layer. Note that the sparse-dense matrix
         multiplication might be split into multiple operations, depending on the nonzero entries in the sparse kernel
         matrix and batch dimension.
-
-        Args:
-            input_shape (tuple): Shape of the input, which is expected to be (n_batch, n_indices, n_channels).
+        :param input_shape: Shape of the input, which is expected to be (n_batch, n_indices, n_channels).
         """
         if self.do_smoothing:
             # batch dimension
@@ -641,13 +635,10 @@ class HealpySmoothing(Model):
             print(f"Successfully built the smoothing layer")
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        """Calls the layer on the input tensor.
-
-        Args:
-            inputs (tf.Tensor): Tensor of shape (n_batch, n_indices, n_channels).
-
-        Returns:
-            tf.Tensor: Smoothed output tensor of identical shape.
+        """
+        Calls the layer on the input tensor.
+        :param inputs: Tensor of shape (n_batch, n_indices, n_channels).
+        :return: Smoothed output tensor of identical shape as input.
         """
         if self.do_smoothing:
             # (n_indices, n_batch, n_channels)
@@ -685,7 +676,8 @@ class HealpySmoothing(Model):
             return inputs
 
     def _build_tree(self) -> None:
-        """Builds a BallTree to find the nearest neighbors of each pixel. The number of neighbors is determined by the
+        """
+        Builds a BallTree to find the nearest neighbors of each pixel. The number of neighbors is determined by the
         radius n_sigma_support * sigma. The maximum number of neighbors is determined by the pixel with the most
         neighbors within that radius. The Gaussian smoothing kernel is evaluated at the distances to the neighbors.
         """
@@ -719,7 +711,8 @@ class HealpySmoothing(Model):
         self.kernel_k = self.kernel_func(dist_k).astype(np.float32)
 
     def _build_kernel(self) -> None:
-        """Builds the indices and values of the coo sparse kernel matrix as dense arrays, which may be stored to disk.
+        """
+        Builds the indices and values of the coo sparse kernel matrix as dense arrays, which may be stored to disk.
         """
         # row, all of the pixels in the patch
         inds_r = tf.constant(np.arange(self.n_indices), dtype=tf.int64)
