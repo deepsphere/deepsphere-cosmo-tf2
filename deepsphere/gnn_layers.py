@@ -128,7 +128,7 @@ class Chebyshev(Model):
             x2 = 2 * utils.split_sparse_dense_matmul(self.sparse_L, x1, self.n_matmul_splits) - x0  # M x Fin*N
             stack.append(x2)
             x0, x1 = x1, x2
-        x = tf.stack(stack, axis=0)
+        x = tf.stack(stack, axis=0)  # K x M x Fin*N
         x = tf.reshape(x, [self.K, M, Fin, -1])  # K x M x Fin x N
         x = tf.transpose(x, perm=[3, 1, 2, 0])  # N x M x Fin x K
         x = tf.reshape(x, [-1, Fin * self.K])  # N*M x Fin*K
