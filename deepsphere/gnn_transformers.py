@@ -10,6 +10,7 @@ from scipy import sparse
 # Helper Functions
 ##################
 
+
 def scaled_dot_product_attention(q, k, v, mask):
     """Calculate the attention weights.
     q, k, v must have matching leading dimensions.
@@ -39,7 +40,7 @@ def scaled_dot_product_attention(q, k, v, mask):
 
     # add the mask to the scaled tensor.
     if mask is not None:
-        scaled_attention_logits += (mask * -1e9)
+        scaled_attention_logits += mask * -1e9
 
     # softmax is normalized on the last axis (seq_len_k) so that the scores
     # add up to 1.
@@ -76,12 +77,12 @@ def scaled_dot_product_sparse_attention(q, k, v, mask):
     # lookup of key and query (need a reorder because lookup is only first dim and currently we have
     # (batch, num_heads, sequence, embed)
     q = tf.transpose(q, [2, 0, 1, 3])
-    q_part = tf.nn.embedding_lookup(params=q, ids=mask[:,0])
+    q_part = tf.nn.embedding_lookup(params=q, ids=mask[:, 0])
     k = tf.transpose(k, [2, 0, 1, 3])
-    k_part = tf.nn.embedding_lookup(params=k, ids=mask[:,1])
+    k_part = tf.nn.embedding_lookup(params=k, ids=mask[:, 1])
 
     # now the scaled dot product
-    matmul_qk = tf.reduce_sum(q_part*k_part, axis=-1, keepdims=True) / tf.math.sqrt(dk)
+    matmul_qk = tf.reduce_sum(q_part * k_part, axis=-1, keepdims=True) / tf.math.sqrt(dk)
 
     # one option would be to transform matmul_qk into a sparse matrix and then use sparse softmax and
     # sparse dense matmul to do the weighted sum of the values. However, this would require to duplicate the
@@ -92,14 +93,14 @@ def scaled_dot_product_sparse_attention(q, k, v, mask):
 
     # get the unscales softmax
     unscaled_softmax = tf.exp(matmul_qk)
-    weighted_values = v_part*unscaled_softmax
+    weighted_values = v_part * unscaled_softmax
 
     # get the weights
-    softmax_sum = tf.math.segment_sum(data=unscaled_softmax, segment_ids=mask[:,0])
-    value_sum = tf.math.segment_sum(data=weighted_values, segment_ids=mask[:,0])
+    softmax_sum = tf.math.segment_sum(data=unscaled_softmax, segment_ids=mask[:, 0])
+    value_sum = tf.math.segment_sum(data=weighted_values, segment_ids=mask[:, 0])
 
     # this is now a tensor with shape (sequence, batch, num_heads, depth_v)
-    output = value_sum/softmax_sum
+    output = value_sum / softmax_sum
     output = tf.transpose(output, [1, 2, 0, 3])
 
     return output
@@ -129,8 +130,10 @@ class AddPositionEmbs(Layer):
         Builds the layer with a given input shape
         :param inputs_shape: Input shape for the layer
         """
+        print(f"{inputs_shape=}")
         pos_emb_shape = (1, inputs_shape[1], inputs_shape[2])
-        self.pos_embedding = self.add_weight('pos_embedding', pos_emb_shape, initializer=self.posemb_init)
+        print(f"{pos_emb_shape=}")
+        self.pos_embedding = self.add_weight(name="pos_embedding", shape=pos_emb_shape, initializer=self.posemb_init)
 
     def call(self, inputs):
         """
@@ -148,6 +151,7 @@ class MultiHeadAttention(Model):
     A simple multi head attention layer followed by a single layer MLP according to
     https://www.tensorflow.org/text/tutorials/transformer
     """
+
     def __init__(self, d_model, num_heads, use_norm=True, activation="relu", sparse_A_indices=None):
         """
         Initializes the multiheaded attention layer.
@@ -218,11 +222,13 @@ class MultiHeadAttention(Model):
         else:
             scaled_attention = scaled_dot_product_sparse_attention(q, k, v, self.sparse_A_indices)
 
-        scaled_attention = tf.transpose(scaled_attention,
-                                        perm=[0, 2, 1, 3])  # (batch_size, seq_len_q, num_heads, depth)
+        scaled_attention = tf.transpose(
+            scaled_attention, perm=[0, 2, 1, 3]
+        )  # (batch_size, seq_len_q, num_heads, depth)
 
-        concat_attention = tf.reshape(scaled_attention,
-                                      (batch_size, -1, self.d_model))  # (batch_size, seq_len_q, d_model)
+        concat_attention = tf.reshape(
+            scaled_attention, (batch_size, -1, self.d_model)
+        )  # (batch_size, seq_len_q, d_model)
 
         # residual connection
         concat_attention = inputs + concat_attention
@@ -253,8 +259,7 @@ class Graph_ViT(Model):
     repeated multiple times.
     """
 
-    def __init__(self, p, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
-                 layer_norm=True):
+    def __init__(self, p, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu", layer_norm=True):
         """
         Creates a visual transformer according to:
         https://arxiv.org/pdf/2010.11929.pdf
@@ -280,18 +285,23 @@ class Graph_ViT(Model):
 
         # save variables
         self.p = p
-        self.embed_filter_size = int(4 ** p)
+        self.embed_filter_size = int(4**p)
         self.key_dim = key_dim
         self.num_heads = num_heads
-        self.embedding_size = self.key_dim*self.num_heads
+        self.embedding_size = self.key_dim * self.num_heads
         self.positional_encoding = positional_encoding
         self.n_layers = n_layers
         self.activation = activation
         self.layer_norm = layer_norm
 
         # create the embedding with a conv1D with correct strides and filters
-        self.embed = tf.keras.layers.Conv1D(self.embedding_size, self.embed_filter_size, strides=self.embed_filter_size,
-                                            padding='valid', data_format='channels_last')
+        self.embed = tf.keras.layers.Conv1D(
+            self.embedding_size,
+            self.embed_filter_size,
+            strides=self.embed_filter_size,
+            padding="valid",
+            data_format="channels_last",
+        )
         if self.positional_encoding:
             self.pos_encoder = AddPositionEmbs()
 
@@ -299,9 +309,14 @@ class Graph_ViT(Model):
         assert n_layers >= 1, "Number of attention layers should be at least 1"
         self.mha_layers = []
         for i in range(n_layers):
-            self.mha_layers.append(MultiHeadAttention(d_model=self.embedding_size, num_heads=self.num_heads,
-                                                      use_norm=self.layer_norm, activation=self.activation))
-
+            self.mha_layers.append(
+                MultiHeadAttention(
+                    d_model=self.embedding_size,
+                    num_heads=self.num_heads,
+                    use_norm=self.layer_norm,
+                    activation=self.activation,
+                )
+            )
 
     def build(self, input_shape):
         """
@@ -312,14 +327,14 @@ class Graph_ViT(Model):
         # deal with the initial embedding
         n_nodes = int(input_shape[1])
         if n_nodes % self.embed_filter_size != 0:
-            raise IOError(f"Input shape {input_shape} not compatible with the embedding filter "
-                          f"size {self.embed_filter_size}")
+            raise IOError(
+                f"Input shape {input_shape} not compatible with the embedding filter " f"size {self.embed_filter_size}"
+            )
         self.embed.build(input_shape)
 
         # add the positional encoding
         if self.positional_encoding:
-            self.pos_encoder.build(inputs_shape=input_shape)
-
+            self.pos_encoder.build(inputs_shape=(1, n_nodes // self.embed_filter_size, self.embedding_size))
 
     def call(self, inputs):
         """
@@ -354,8 +369,7 @@ class Graph_Transformer(Model):
     as a mask in the softmax without any edge features.
     """
 
-    def __init__(self, A, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
-                 layer_norm=True):
+    def __init__(self, A, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu", layer_norm=True):
         """
         :param A: The adjacency matrix of the graph
         :param key_dim: Dimension of the key, query and value for the embedding in the multi head attention for each
@@ -374,7 +388,7 @@ class Graph_Transformer(Model):
         self.A = A
         self.key_dim = key_dim
         self.num_heads = num_heads
-        self.embedding_size = self.key_dim*self.num_heads
+        self.embedding_size = self.key_dim * self.num_heads
         self.positional_encoding = positional_encoding
         self.n_layers = n_layers
         self.activation = activation
@@ -393,10 +407,15 @@ class Graph_Transformer(Model):
         assert n_layers >= 1, "Number of attention layers should be at least 1"
         self.mha_layers = []
         for i in range(n_layers):
-            self.mha_layers.append(MultiHeadAttention(d_model=self.embedding_size, num_heads=self.num_heads,
-                                                      use_norm=self.layer_norm, activation=self.activation,
-                                                      sparse_A_indices=self.sparse_A_indices))
-
+            self.mha_layers.append(
+                MultiHeadAttention(
+                    d_model=self.embedding_size,
+                    num_heads=self.num_heads,
+                    use_norm=self.layer_norm,
+                    activation=self.activation,
+                    sparse_A_indices=self.sparse_A_indices,
+                )
+            )
 
     def build(self, input_shape):
         """
@@ -409,8 +428,7 @@ class Graph_Transformer(Model):
 
         # add the positional encoding
         if self.positional_encoding:
-            self.pos_encoder.build(inputs_shape=input_shape)
-
+            self.pos_encoder.build(inputs_shape=(1, input_shape[1], self.embedding_size))
 
     def call(self, inputs):
         """
