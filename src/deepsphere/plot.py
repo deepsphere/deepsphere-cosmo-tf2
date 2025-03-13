@@ -4,8 +4,6 @@ import healpy as hp
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import utils
-
 
 def plot_filters_gnomonic(filters, order=10, ind=0, title="Filter {}->{}", graticule=False):
     """Plot all filters in a filterbank in Gnomonic projection."""
@@ -65,8 +63,7 @@ def plot_filters_gnomonic(filters, order=10, ind=0, title="Filter {}->{}", grati
     fig.suptitle("Gnomoinc view of the {} filters in the filterbank".format(filters.n_filters), fontsize=25, y=1.05)
 
     if graticule:
-        with utils.HiddenPrints():
-            hp.graticule(verbose=False)
+        hp.graticule(verbose=False)
 
     return fig
 

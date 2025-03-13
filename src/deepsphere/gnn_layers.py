@@ -5,6 +5,7 @@ from scipy.sparse.linalg import eigsh
 from scipy.special import comb
 from tensorflow.keras import Model
 
+from . import logger
 from . import utils
 
 
@@ -94,7 +95,7 @@ class Chebyshev(Model):
                 name="kernel", shape=[self.K * Fin, Fout], initializer=initializer, **self.kwargs
             )
         else:
-            print(self.kwargs)
+            logger.info(self.kwargs)
             self.kernel = self.add_weight(
                 name="kernel", shape=[self.K * Fin, Fout], initializer=self.initializer, **self.kwargs
             )

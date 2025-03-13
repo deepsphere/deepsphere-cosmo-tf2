@@ -7,6 +7,7 @@ from tensorflow.keras.models import Sequential
 
 from . import gnn_layers as gnn
 from . import healpy_layers as hp_nn
+from . import logger
 from . import plot
 
 
@@ -33,7 +34,7 @@ class HealpyGCNN(Sequential):
         # This is necessary for every Layer
         super(HealpyGCNN, self).__init__(name="")
 
-        print("WARNING: This network assumes that everything concerning healpy is in NEST ordering...", flush=True)
+        logger.info("WARNING: This network assumes that everything concerning healpy is in NEST ordering...")
 
         if n_neighbors not in [8, 20, 40, 60]:
             raise NotImplementedError(
@@ -63,10 +64,9 @@ class HealpyGCNN(Sequential):
         if not hp.isnsideok(self.nside_out, nest=True):
             raise ValueError(f"The ouput of the network does not have a valid nside {self.nside_out}...")
 
-        print(
+        logger.info(
             f"Detected a reduction factor of {self.reduction_fac}, the input with nside {self.nside_in} will be "
             f"transformed to {self.nside_out} during a forward pass. Checking for consistency with indices...",
-            flush=True,
         )
 
         # now we check if this makes sense with the given indices set
@@ -85,7 +85,7 @@ class HealpyGCNN(Sequential):
                 "indices compatible..."
             )
         else:
-            print("indices seem consistent...", flush=True)
+            logger.info("indices seem consistent...")
 
         # now we build the actual layers
         self.layers_use = []
@@ -214,7 +214,7 @@ class HealpyGCNN(Sequential):
     def get_gsp_filters(self, layer, ind_in=None, ind_out=None, return_weights=False):
         """
         Get the filter as a pygsp format
-        :param layer: index (int) or name of the layer. Can be figured out with <print_summary>.
+        :param layer: index (int) or name of the layer. Can be figured out with <logger.info_summary>.
         :param ind_in: index(es) of the input filter(s) (default None, all the filters)
         :param ind_out: index(es) of the output filter(s) (default None, all the filters)
         :param return_weights: just return a list of weights
@@ -247,7 +247,7 @@ class HealpyGCNN(Sequential):
         # we get the weights
         if isinstance(tf_layer, gnn.GCNN_ResidualLayer):
             # get the weights
-            # print(tf_layer.layer1.kernel)
+            # logger.info(tf_layer.layer1.kernel)
             weight1 = self._get_filter_coeffs(tf_layer.layer1, ind_in=ind_in, ind_out=ind_out)
             weight2 = self._get_filter_coeffs(tf_layer.layer2, ind_in=ind_in, ind_out=ind_out)
             weights = [weight1, weight2]
@@ -293,7 +293,7 @@ class HealpyGCNN(Sequential):
     ):
         """
         Plot the Chebyshev coefficients of a layer.
-        layer : index (int) or name of the layer. Can be figured out with <print_summary>.
+        layer : index (int) or name of the layer. Can be figured out with <logger.info_summary>.
         ind_in : index(es) of the input filter(s) (default None, all the filters)
         ind_out : index(es) of the output filter(s) (default None, all the filters)
         ax : axes (optional)

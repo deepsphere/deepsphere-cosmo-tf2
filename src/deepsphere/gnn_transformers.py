@@ -4,6 +4,8 @@ from scipy import sparse
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Layer
 
+from . import logger
+
 
 # Helper Functions
 ##################
@@ -128,9 +130,9 @@ class AddPositionEmbs(Layer):
         Builds the layer with a given input shape
         :param inputs_shape: Input shape for the layer
         """
-        print(f"{inputs_shape=}")
+        logger.info(f"{inputs_shape=}")
         pos_emb_shape = (1, inputs_shape[1], inputs_shape[2])
-        print(f"{pos_emb_shape=}")
+        logger.info(f"{pos_emb_shape=}")
         self.pos_embedding = self.add_weight(name="pos_embedding", shape=pos_emb_shape, initializer=self.posemb_init)
 
     def call(self, inputs):

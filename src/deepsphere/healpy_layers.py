@@ -8,11 +8,12 @@ from sklearn.neighbors import BallTree
 from tensorflow.keras.models import Model
 from tqdm import tqdm
 
+from . import logger
 from . import utils
 from .gnn_layers import Chebyshev, Monomial, Bernstein, GCNN_ResidualLayer
 from .gnn_transformers import Graph_Transformer, Graph_ViT
 
-# set the print options
+# set the logger.info options
 np.set_printoptions(precision=1)
 
 
@@ -536,7 +537,7 @@ class HealpySmoothing(Model):
         and sigma_2 is a Gaussian with sigma_3 = sqrt(sigma_1^2 + sigma_2^2). This implementation saves GPU memory, as
         the sparse kernel matrix can grow to be very large.
         :param nside: The healpy nside of the input.
-        :param indices: 1d array of indices, corresponding to the pixel ids of the input map footprint.
+        :param indices: 1d array of indices, corresponding to the pixel ids of the input map footlogger.info.
         :param nest: Whether the maps are stored in healpix NEST ordering. Defaults to True, which is
                      always the case for DeepSphere networks.
         :param mask: Boolean tensor of shape (n_indices, 1) or (n_indices, n_channels)
@@ -584,7 +585,7 @@ class HealpySmoothing(Model):
 
         if self.fwhm == 0.0 or self.sigma == 0.0:
             self.do_smoothing = False
-            print("The layer implements the identity, smoothing is disabled")
+            logger.info("The layer implements the identity, smoothing is disabled")
         else:
             self.do_smoothing = True
 
@@ -636,14 +637,14 @@ class HealpySmoothing(Model):
 
             if self.per_channel_repetitions is not None:
                 per_channel_factor = np.sqrt(self.per_channel_repetitions)
-                print(f"Using the per channel smoothing repetitions {self.per_channel_repetitions}")
-                print(
+                logger.info(f"Using the per channel smoothing repetitions {self.per_channel_repetitions}")
+                logger.info(
                     "Using the per channel smoothing scales "
                     f"sigma = {per_channel_factor * self.sigma_arcmin} arcmin, "
                     f"fwhm = {per_channel_factor * self.fwhm_arcmin} arcmin"
                 )
             else:
-                print(
+                logger.info(
                     f"Using the per channel smoothing scale sigma = {self.sigma_arcmin:4.2f} arcmin, "
                     f" fwhm = {self.fwhm_arcmin:4.2f} arcmin"
                 )
@@ -652,7 +653,7 @@ class HealpySmoothing(Model):
                 try:
                     self.ind_coo = np.load(os.path.join(self.data_path, f"ind_coo{self.file_label}.npy"))
                     self.val_coo = np.load(os.path.join(self.data_path, f"val_coo{self.file_label}.npy"))
-                    print(f"Successfully loaded sparse kernel indices and values from {self.data_path}")
+                    logger.info(f"Successfully loaded sparse kernel indices and values from {self.data_path}")
                 except FileNotFoundError:
                     self._build_tree()
                     self._build_kernel()
@@ -661,7 +662,7 @@ class HealpySmoothing(Model):
                 self._build_kernel()
 
             self._build_sparse_tensor()
-            print("Successfully created the sparse kernel tensor")
+            logger.info("Successfully created the sparse kernel tensor")
 
     def build(self, input_shape: tuple) -> None:
         """
@@ -678,7 +679,7 @@ class HealpySmoothing(Model):
                 self.n_batch = input_shape[0]
             else:
                 self.n_batch = None
-                print(
+                logger.info(
                     "Since the batch size cannot be inferred from the input shape and max_batch_size is not "
                     "available, no sparse-dense matmul splits are performed, which may cause an error."
                 )
@@ -719,7 +720,7 @@ class HealpySmoothing(Model):
                 ):
                     self.n_matmul_splits += 1
 
-            print("Successfully built the smoothing layer")
+            logger.info("Successfully built the smoothing layer")
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         """
@@ -768,7 +769,7 @@ class HealpySmoothing(Model):
         radius n_sigma_support * sigma. The maximum number of neighbors is determined by the pixel with the most
         neighbors within that radius. The Gaussian smoothing kernel is evaluated at the distances to the neighbors.
         """
-        print(
+        logger.info(
             f"Creating tree for {self.n_indices} pixels and radius n_sigma_support * sigma = "
             f"{self.sigma_arcmin * self.n_sigma_support:4.2f} arcmin"
         )
@@ -782,7 +783,7 @@ class HealpySmoothing(Model):
         inds_r = tree.query_radius(theta, r=self.sigma_rad * self.n_sigma_support)
         n_neighbours = [len(i) for i in inds_r]
         self.max_neighbors = np.max(n_neighbours)
-        print(f"The maximal number of neighbors within that radius is {self.max_neighbors}")
+        logger.info(f"The maximal number of neighbors within that radius is {self.max_neighbors}")
 
         # find the per pixel k nearest neighbors
         n_theta_splits = 100
@@ -818,7 +819,7 @@ class HealpySmoothing(Model):
         if self.data_path is not None:
             np_ind_coo = self.ind_coo.numpy()
             np_val_coo = self.val_coo.numpy()
-            print(
+            logger.info(
                 f"Storing sparse kernel indices ({np_ind_coo.nbytes/1e9:4.2f} GB, dtype {np_ind_coo.dtype}) and "
                 f"values ({np_val_coo.nbytes/1e9:4.2f} GB, dtype {np_val_coo.dtype})"
             )
