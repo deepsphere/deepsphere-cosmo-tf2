@@ -1,5 +1,7 @@
 # DeepSphere: a spherical convolutional neural network
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 [Janis Fluri](http://www.da.inf.ethz.ch/people/JanisFluri),
 [Nathanaël Perraudin](https://perraudin.info),
 [Michaël Defferrard](https://deff.ch)
@@ -38,24 +40,19 @@ Papers:
    cd deepsphere-cosmo-tf2
    ```
 
-2. Install the dependencies.
-   ```sh
-   pip install -r requirements.txt
-   ```
-   **Note**: the code has been developed and tested with Python 3.6.
-   It **does not** work on Python 2.7!
-
-3. Install the package.
+2. Install the package (including dependencies)
    ```sh
    pip install -e .
    ```
+   **Note**: the code has been developed and tested with Python 3.10.
+   It **does not** work on Python 2.7!
 
-4. (Optional) Test the installation.
+3. (Optional) Test the installation.
    ```
    pytest tests
    ```
 
-5. Play with the Jupyter notebooks.
+4. Play with the Jupyter notebooks.
    ```sh
    jupyter notebook
    ```
@@ -118,4 +115,14 @@ Please consider citing our papers if you find it useful.
   year = {2020},
   url = {https://openreview.net/forum?id=B1e3OlStPB},
 }
+```
+
+## Development
+
+### Hooks
+
+Pre-commit hooks come in any color you'd like
+
+```bash
+pre-commit install -c .hooks/.pre-commit-config.yaml
 ```
