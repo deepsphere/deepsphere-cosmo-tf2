@@ -1,11 +1,9 @@
 import numpy as np
-
 import tensorflow as tf
-from tensorflow.keras.layers import Layer
-from tensorflow.keras import Model
-
-
 from scipy import sparse
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Layer
+
 
 # Helper Functions
 ##################

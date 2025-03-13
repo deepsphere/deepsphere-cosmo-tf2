@@ -1,9 +1,0 @@
-numpy
-scipy<=1.8
-healpy
-tensorflow>=2.3.0
-matplotlib
-PyGSP @ git+https://github.com/jafluri/pygsp.git@sphere-graphs
-tqdm
-pytest
-scikit-learn

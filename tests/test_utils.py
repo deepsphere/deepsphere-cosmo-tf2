@@ -1,5 +1,5 @@
-import numpy as np
 import healpy as hp
+import numpy as np
 
 from deepsphere import utils
 

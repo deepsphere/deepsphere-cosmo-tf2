@@ -1,13 +1,20 @@
-from .gnn_layers import *
-from .gnn_transformers import *
-
 import os
-import healpy as hp
-from sklearn.neighbors import BallTree
 from typing import Union, Optional
+
+import healpy as hp
+import numpy as np
+import tensorflow as tf
+from sklearn.neighbors import BallTree
+from tensorflow.keras.models import Model
 from tqdm import tqdm
+
 from . import utils
+from .gnn_layers import Chebyshev, Monomial, Bernstein, GCNN_ResidualLayer
+from .gnn_transformers import Graph_Transformer, Graph_ViT
+
+# set the print options
 np.set_printoptions(precision=1)
+
 
 class HealpyPool(Model):
     """
@@ -38,11 +45,21 @@ class HealpyPool(Model):
         self.kwargs = kwargs
 
         if pool_type == "MAX":
-            self.filter = tf.keras.layers.MaxPool1D(pool_size=self.filter_size, strides=self.filter_size,
-                                                    padding='valid', data_format='channels_last', **kwargs)
+            self.filter = tf.keras.layers.MaxPool1D(
+                pool_size=self.filter_size,
+                strides=self.filter_size,
+                padding="valid",
+                data_format="channels_last",
+                **kwargs,
+            )
         elif pool_type == "AVG":
-            self.filter =  tf.keras.layers.AveragePooling1D(pool_size=self.filter_size, strides=self.filter_size,
-                                                            padding='valid', data_format='channels_last', **kwargs)
+            self.filter = tf.keras.layers.AveragePooling1D(
+                pool_size=self.filter_size,
+                strides=self.filter_size,
+                padding="valid",
+                data_format="channels_last",
+                **kwargs,
+            )
         else:
             raise IOError(f"Pooling type not understood: {self.pool_type}")
 
@@ -91,15 +108,21 @@ class HealpyPseudoConv(Model):
 
         # save variables
         self.p = p
-        self.filter_size = int(4 ** p)
+        self.filter_size = int(4**p)
         self.Fout = Fout
         self.kernel_initializer = kernel_initializer
         self.kwargs = kwargs
 
         # create the files
-        self.filter = tf.keras.layers.Conv1D(self.Fout, self.filter_size, strides=self.filter_size,
-                                             padding='valid', data_format='channels_last',
-                                             kernel_initializer=self.kernel_initializer, **self.kwargs)
+        self.filter = tf.keras.layers.Conv1D(
+            self.Fout,
+            self.filter_size,
+            strides=self.filter_size,
+            padding="valid",
+            data_format="channels_last",
+            kernel_initializer=self.kernel_initializer,
+            **self.kwargs,
+        )
 
     def build(self, input_shape):
         """
@@ -147,15 +170,21 @@ class HealpyPseudoConv_Transpose(Model):
 
         # save variables
         self.p = p
-        self.filter_size = int(4 ** p)
+        self.filter_size = int(4**p)
         self.Fout = Fout
         self.kernel_initializer = kernel_initializer
         self.kwargs = kwargs
 
         # create the files
-        self.filter = tf.keras.layers.Conv2DTranspose(self.Fout, (1, self.filter_size), strides=(1, self.filter_size),
-                                                      padding='valid', data_format='channels_last',
-                                                      kernel_initializer=self.kernel_initializer, **self.kwargs)
+        self.filter = tf.keras.layers.Conv2DTranspose(
+            self.Fout,
+            (1, self.filter_size),
+            strides=(1, self.filter_size),
+            padding="valid",
+            data_format="channels_last",
+            kernel_initializer=self.kernel_initializer,
+            **self.kwargs,
+        )
 
     def build(self, input_shape):
         """
@@ -186,12 +215,12 @@ class HealpyPseudoConv_Transpose(Model):
         return tf.squeeze(self.filter(input_tensor), axis=1)
 
 
-class HealpyChebyshev():
+class HealpyChebyshev:
     """
     A helper class for a Chebyshev5 layer using healpy indices instead of the general Layer
     """
-    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False,
-                 use_bn=False, **kwargs):
+
+    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False, use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param K: Order of the polynomial to use
@@ -215,20 +244,30 @@ class HealpyChebyshev():
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
-        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the
                                 tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Chebyshev5 layer that can be called
         """
 
         # now we init the layer
-        return Chebyshev(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                          use_bias=self.use_bias, use_bn=self.use_bn, n_matmul_splits=n_matmul_splits, **self.kwargs)
+        return Chebyshev(
+            L=L,
+            K=self.K,
+            Fout=self.Fout,
+            initializer=self.initializer,
+            activation=self.activation,
+            use_bias=self.use_bias,
+            use_bn=self.use_bn,
+            n_matmul_splits=n_matmul_splits,
+            **self.kwargs,
+        )
 
 
-class HealpyMonomial():
+class HealpyMonomial:
     """
     A graph convolutional layer using Monomials
     """
+
     def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False, use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
@@ -254,25 +293,43 @@ class HealpyMonomial():
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
-        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the
                                 tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Monomial layer that can be called
         """
 
         # now we init the layer
-        return Monomial(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                        use_bias=self.use_bias, use_bn=self.use_bn, n_matmul_splits=n_matmul_splits, **self.kwargs)
+        return Monomial(
+            L=L,
+            K=self.K,
+            Fout=self.Fout,
+            initializer=self.initializer,
+            activation=self.activation,
+            use_bias=self.use_bias,
+            use_bn=self.use_bn,
+            n_matmul_splits=n_matmul_splits,
+            **self.kwargs,
+        )
 
 
-class Healpy_ResidualLayer():
+class Healpy_ResidualLayer:
     """
     A generic residual layer of the form
     in -> layer -> layer -> out + in
     with optional batchnorm in the end
     """
 
-    def __init__(self, layer_type, layer_kwargs, activation=None, act_before=False, use_bn=False,
-                 norm_type="batch_norm", bn_kwargs=None, alpha=1.0):
+    def __init__(
+        self,
+        layer_type,
+        layer_kwargs,
+        activation=None,
+        act_before=False,
+        use_bn=False,
+        norm_type="batch_norm",
+        bn_kwargs=None,
+        alpha=1.0,
+    ):
         """
         Initializes the residual layer with the given argument
         :param layer_type: The layer type, either "CHEBY" or "MONO" for chebychev or monomials
@@ -300,7 +357,7 @@ class Healpy_ResidualLayer():
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
-        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the
                                 tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: GCNN_ResidualLayer layer that can be called
         """
@@ -308,10 +365,17 @@ class Healpy_ResidualLayer():
         self.layer_kwargs.update({"L": L})
         self.layer_kwargs.update({"n_matmul_splits": n_matmul_splits})
 
-        return GCNN_ResidualLayer(layer_type=self.layer_type, layer_kwargs=self.layer_kwargs,
-                                  activation=self.activation, act_before=self.act_before,
-                                  use_bn=self.use_bn, norm_type=self.norm_type,
-                                  bn_kwargs=self.bn_kwargs, alpha=self.alpha)
+        return GCNN_ResidualLayer(
+            layer_type=self.layer_type,
+            layer_kwargs=self.layer_kwargs,
+            activation=self.activation,
+            act_before=self.act_before,
+            use_bn=self.use_bn,
+            norm_type=self.norm_type,
+            bn_kwargs=self.bn_kwargs,
+            alpha=self.alpha,
+        )
+
 
 class Healpy_ViT(Graph_ViT):
     """
@@ -320,8 +384,7 @@ class Healpy_ViT(Graph_ViT):
     at runtime, it is literally the same as Graph_ViT
     """
 
-    def __init__(self, p, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
-                 layer_norm=True):
+    def __init__(self, p, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu", layer_norm=True):
         """
         Creates a visual transformer according to:
         https://arxiv.org/pdf/2010.11929.pdf
@@ -339,17 +402,23 @@ class Healpy_ViT(Graph_ViT):
         """
 
         # just do the super init
-        super(Healpy_ViT, self).__init__(p=p, key_dim=key_dim, num_heads=num_heads,
-                                         positional_encoding=positional_encoding, n_layers=n_layers,
-                                         activation=activation, layer_norm=layer_norm)
+        super(Healpy_ViT, self).__init__(
+            p=p,
+            key_dim=key_dim,
+            num_heads=num_heads,
+            positional_encoding=positional_encoding,
+            n_layers=n_layers,
+            activation=activation,
+            layer_norm=layer_norm,
+        )
 
-class Healpy_Transformer():
+
+class Healpy_Transformer:
     """
     The wrapper layer for the Graph_Transformer layer
     """
 
-    def __init__(self, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu",
-                 layer_norm=True):
+    def __init__(self, key_dim, num_heads, positional_encoding=True, n_layers=1, activation="relu", layer_norm=True):
         """
         Creates a visual transformer according to:
         https://arxiv.org/pdf/2010.11929.pdf
@@ -378,16 +447,23 @@ class Healpy_Transformer():
         :return: Graph_Transformer layer that can be called
         """
 
-        return Graph_Transformer(A=A, key_dim=self.key_dim, num_heads=self.num_heads,
-                                 positional_encoding=self.positional_encoding, n_layers=self.n_layers,
-                                 activation=self.activation, layer_norm=self.layer_norm)
+        return Graph_Transformer(
+            A=A,
+            key_dim=self.key_dim,
+            num_heads=self.num_heads,
+            positional_encoding=self.positional_encoding,
+            n_layers=self.n_layers,
+            activation=self.activation,
+            layer_norm=self.layer_norm,
+        )
 
-class HealpyBernstein():
+
+class HealpyBernstein:
     """
     A helper class for a Bernstein layer using healpy indices instead of the general Layer
     """
-    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False,
-                 use_bn=False, **kwargs):
+
+    def __init__(self, K, Fout=None, initializer=None, activation=None, use_bias=False, use_bn=False, **kwargs):
         """
         Initializes the graph convolutional layer, assuming the input has dimension (B, M, F)
         :param K: Order of the polynomial to use
@@ -411,14 +487,24 @@ class HealpyBernstein():
         """
         initializes the actual layer, should be called once the graph Laplacian has been calculated
         :param L: the graph laplacian
-        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the 
+        :param n_matmul_splits: Number of splits to apply to axis 1 of the dense tensor in the
             tf.sparse.sparse_dense_matmul operations to avoid the operation's size limitation
         :return: Chebyshev5 layer that can be called
         """
 
         # now we init the layer
-        return Bernstein(L=L, K=self.K, Fout=self.Fout, initializer=self.initializer, activation=self.activation,
-                          use_bias=self.use_bias, use_bn=self.use_bn, n_matmul_splits=n_matmul_splits, **self.kwargs)
+        return Bernstein(
+            L=L,
+            K=self.K,
+            Fout=self.Fout,
+            initializer=self.initializer,
+            activation=self.activation,
+            use_bias=self.use_bias,
+            use_bn=self.use_bn,
+            n_matmul_splits=n_matmul_splits,
+            **self.kwargs,
+        )
+
 
 class HealpySmoothing(Model):
     """
@@ -445,35 +531,35 @@ class HealpySmoothing(Model):
         """
         Initialize the sparse kernel tensor with which the maps are smoothed.
         Note that the smoothing is always done with a single base sigma. When different smoothing scales are specified
-        for the different input channels, that kernel is applied repeatedly to channels which require a larger 
-        smoothing scale, by exploiting the fact that the convolution of two Gaussians with standard deviations sigma_1 
-        and sigma_2 is a Gaussian with sigma_3 = sqrt(sigma_1^2 + sigma_2^2). This implementation saves GPU memory, as 
+        for the different input channels, that kernel is applied repeatedly to channels which require a larger
+        smoothing scale, by exploiting the fact that the convolution of two Gaussians with standard deviations sigma_1
+        and sigma_2 is a Gaussian with sigma_3 = sqrt(sigma_1^2 + sigma_2^2). This implementation saves GPU memory, as
         the sparse kernel matrix can grow to be very large.
         :param nside: The healpy nside of the input.
         :param indices: 1d array of indices, corresponding to the pixel ids of the input map footprint.
         :param nest: Whether the maps are stored in healpix NEST ordering. Defaults to True, which is
                      always the case for DeepSphere networks.
         :param mask: Boolean tensor of shape (n_indices, 1) or (n_indices, n_channels)
-                     that indicates which part of the patch defined by the indices is actually populated. Defaults to 
+                     that indicates which part of the patch defined by the indices is actually populated. Defaults to
                      None, then no additional masking is applied and the maps bleed into the zero padding.
         :param fwhm: FWHM of the Gaussian smoothing kernel. Can be either a single
-                     or per channel number. In the latter case, the smoothing scale of the kernel is chosen as the 
-                     smallest value and the rest achieved by smoothing repeatedly. Defaults to None, then sigma needs 
+                     or per channel number. In the latter case, the smoothing scale of the kernel is chosen as the
+                     smallest value and the rest achieved by smoothing repeatedly. Defaults to None, then sigma needs
                      to be specified.
-        :param sigma: Identical functionality as the fwhm argument, but specifies the standard deviation of the 
+        :param sigma: Identical functionality as the fwhm argument, but specifies the standard deviation of the
                       Gaussian smoothing kernel instead. Defaults to None, then fwhm needs to be specified.
-        :param n_sigma_support: Determines the radius from which the smoothing is calculated. Specifically, this value 
-                                determines which nearest neighbors are included. Defaults to 3, then roughly 99.7% of 
+        :param n_sigma_support: Determines the radius from which the smoothing is calculated. Specifically, this value
+                                determines which nearest neighbors are included. Defaults to 3, then roughly 99.7% of
                                 the Gaussian probability mass is accounted for.
         :param arcmin: Whether fwhm and sigma are specified in arcmin or radian. Defaults to True.
-        :param per_channel_repetitions: When a single value is specified for fwhm or sigma, this argument determines 
-                                        the per channel number of times the smoothing kernel is applied. Defaults to 
+        :param per_channel_repetitions: When a single value is specified for fwhm or sigma, this argument determines
+                                        the per channel number of times the smoothing kernel is applied. Defaults to
                                         None.
-        :param data_path: Path where the sparse kernel tensor is stored to, and if available, loaded from. Defaults to 
+        :param data_path: Path where the sparse kernel tensor is stored to, and if available, loaded from. Defaults to
                           None, then the sparse kernel tensor is neither saved nor loaded.
-        :param max_batch_size: Maximal batch size this network is supposed to handle. This determines the number of 
-                               splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied 
-                               independent of the actual batch size. Defaults to None, then an attempt is made to infer 
+        :param max_batch_size: Maximal batch size this network is supposed to handle. This determines the number of
+                               splits in the tf.sparse.sparse_dense_matmul operation, which are subsequently applied
+                               independent of the actual batch size. Defaults to None, then an attempt is made to infer
                                this from the input, which may cause an error.
         """
         super(HealpySmoothing, self).__init__()
@@ -485,8 +571,8 @@ class HealpySmoothing(Model):
         self.mask = mask
 
         # smoothing
-        assert fwhm is not None or sigma is not None, f"One of fwhm and sigma has to be specified"
-        assert fwhm is None or sigma is None, f"Only one of fwhm and sigma can be specified"
+        assert fwhm is not None or sigma is not None, "One of fwhm and sigma has to be specified"
+        assert fwhm is None or sigma is None, "Only one of fwhm and sigma can be specified"
 
         self.fwhm = fwhm
         self.sigma = sigma
@@ -498,14 +584,14 @@ class HealpySmoothing(Model):
 
         if self.fwhm == 0.0 or self.sigma == 0.0:
             self.do_smoothing = False
-            print(f"The layer implements the identity, smoothing is disabled")
+            print("The layer implements the identity, smoothing is disabled")
         else:
             self.do_smoothing = True
 
             if isinstance(self.fwhm, (list, np.ndarray)):
                 assert (
                     self.per_channel_repetitions is None
-                ), f"per_channel_repetitions can't be specified when fwhm is a list, since it is then inferred"
+                ), "per_channel_repetitions can't be specified when fwhm is a list, since it is then inferred"
 
                 self.fwhm = np.array(self.fwhm)
 
@@ -519,7 +605,7 @@ class HealpySmoothing(Model):
             elif isinstance(self.sigma, (list, np.ndarray)):
                 assert (
                     self.per_channel_repetitions is None
-                ), f"per_channel_repetitions can't be specified when sigma is a list, since it is then inferred"
+                ), "per_channel_repetitions can't be specified when sigma is a list, since it is then inferred"
 
                 self.sigma = np.array(self.sigma)
                 sigma_min = np.min(self.sigma)
@@ -552,7 +638,7 @@ class HealpySmoothing(Model):
                 per_channel_factor = np.sqrt(self.per_channel_repetitions)
                 print(f"Using the per channel smoothing repetitions {self.per_channel_repetitions}")
                 print(
-                    f"Using the per channel smoothing scales "
+                    "Using the per channel smoothing scales "
                     f"sigma = {per_channel_factor * self.sigma_arcmin} arcmin, "
                     f"fwhm = {per_channel_factor * self.fwhm_arcmin} arcmin"
                 )
@@ -575,7 +661,7 @@ class HealpySmoothing(Model):
                 self._build_kernel()
 
             self._build_sparse_tensor()
-            print(f"Successfully created the sparse kernel tensor")
+            print("Successfully created the sparse kernel tensor")
 
     def build(self, input_shape: tuple) -> None:
         """
@@ -593,8 +679,8 @@ class HealpySmoothing(Model):
             else:
                 self.n_batch = None
                 print(
-                    f"Since the batch size cannot be inferred from the input shape and max_batch_size is not "
-                    f"available, no sparse-dense matmul splits are performed, which may cause an error."
+                    "Since the batch size cannot be inferred from the input shape and max_batch_size is not "
+                    "available, no sparse-dense matmul splits are performed, which may cause an error."
                 )
 
             # map dimensions
@@ -608,7 +694,7 @@ class HealpySmoothing(Model):
 
                 assert (
                     self.per_channel_repetitions.dtype == int
-                ), f"The list per_channel_repetitions has to contain integers only"
+                ), "The list per_channel_repetitions has to contain integers only"
 
             if self.mask is not None:
                 self.mask = tf.cast(self.mask, dtype=tf.float32)
@@ -620,7 +706,7 @@ class HealpySmoothing(Model):
 
                 assert (
                     self.mask.shape[1] == self.n_indices
-                ), f"The mask has to have shape (1, n_indices, 1) or (1, n_indices, n_channels)"
+                ), "The mask has to have shape (1, n_indices, 1) or (1, n_indices, n_channels)"
 
             self.n_matmul_splits = 1
             # check if we need to split the matmul
@@ -628,13 +714,12 @@ class HealpySmoothing(Model):
                 while not (
                     # tf.split only does even splits for integer arguments
                     (self.n_batch % self.n_matmul_splits == 0)
-                    and
-                    # due to the int32 limitation of tf.sparse.sparse_dense_matmul
-                    (self.n_matmul_splits >= self.n_batch * len(self.sparse_kernel.indices) / 2**31)
+                    # and due to the int32 limitation of tf.sparse.sparse_dense_matmul
+                    and (self.n_matmul_splits >= self.n_batch * len(self.sparse_kernel.indices) / 2**31)
                 ):
                     self.n_matmul_splits += 1
 
-            print(f"Successfully built the smoothing layer")
+            print("Successfully built the smoothing layer")
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         """

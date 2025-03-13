@@ -1,1 +1,0 @@
-from deepsphere.healpy_networks import HealpyGCNN

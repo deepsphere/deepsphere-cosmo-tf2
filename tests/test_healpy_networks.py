@@ -1,14 +1,14 @@
 import os
 import tempfile
 
-import pytest
-import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow as tf
 import healpy as hp
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+import tensorflow as tf
 
-from deepsphere import healpy_layers as hp_nn
 from deepsphere import HealpyGCNN
+from deepsphere import healpy_layers as hp_nn
 
 
 def test_HealpyGCNN_plotting():

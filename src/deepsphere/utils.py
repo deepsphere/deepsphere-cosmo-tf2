@@ -1,9 +1,9 @@
 """Utilities module."""
 
-import numpy as np
-from scipy import sparse
 import healpy as hp
+import numpy as np
 import tensorflow as tf
+from scipy import sparse
 
 
 def extend_indices(indices, nside_in, nside_out, nest=True):
@@ -36,19 +36,21 @@ def extend_indices(indices, nside_in, nside_out, nest=True):
     # get the new indices
     return np.arange(hp.nside2npix(nside_in))[m_in > 1e-12]
 
+
 def rescale_L(L, lmax=2, scale=1):
     """Rescale the Laplacian eigenvalues in [-scale,scale]."""
-    M, M = L.shape
-    I = sparse.identity(M, format='csr', dtype=L.dtype)
+    M, _ = L.shape
+    identity = sparse.identity(M, format="csr", dtype=L.dtype)
     L *= 2 * scale / lmax
-    L -= I
+    L -= identity
     return L
+
 
 @tf.function
 def split_sparse_dense_matmul(sparse_tensor, dense_tensor, n_splits=1):
     """
     Splits axis 1 of the dense_tensor such that tensorflow can handle the size of the computation.
-    :param sparse_tensor: Input sparse tensor of rank 2. 
+    :param sparse_tensor: Input sparse tensor of rank 2.
     :param dense_tensor: Input dense tensor of rank 2.
     :param n_splits: Integer number of splits applied to axis 1 of dense_tensor.
 
@@ -61,8 +63,10 @@ def split_sparse_dense_matmul(sparse_tensor, dense_tensor, n_splits=1):
     • training=False'
     """
     if n_splits > 1:
-        print(f"Tracing... Due to tensor size, tf.sparse.sparse_dense_matmul is executed over {n_splits} splits."
-              f" Beware of the resulting performance penalty.")
+        print(
+            f"Tracing... Due to tensor size, tf.sparse.sparse_dense_matmul is executed over {n_splits} splits."
+            f" Beware of the resulting performance penalty."
+        )
         dense_splits = tf.split(dense_tensor, n_splits, axis=1)
         result = []
         for dense_split in dense_splits:

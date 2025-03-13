@@ -1,11 +1,11 @@
 import numpy as np
+import tensorflow as tf
 from scipy import sparse
 from scipy.sparse.linalg import eigsh
-import tensorflow as tf
+from scipy.special import comb
 from tensorflow.keras import Model
 
 from . import utils
-from scipy.special import comb
 
 
 class Chebyshev(Model):
